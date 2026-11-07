@@ -9,7 +9,9 @@ Every asset shipped in this repository must be listed here with its source and l
 | Vivaldi — Spring | MIDI | — | — | Planned (same condition) |
 | Handel — Water Music | MIDI | — | — | Planned (same condition) |
 | Orchestral instrument sounds | Audio | Synthesised at runtime with Tone.js (no sample files) | n/a | Phase 4 |
-| MediaPipe `hand_landmarker.task` + WASM | Model | Google MediaPipe | Apache-2.0 (verify at download time) | Phase 2 |
+| `@mediapipe/tasks-vision` 1.2.2 (JS + WASM runtime) | Library | npm, Google MediaPipe | Apache-2.0 (verified from the package's `package.json`) | In use; WASM copied to `public/mediapipe/wasm` at install (not committed) |
+| `hand_landmarker.task` (float16, v1) | ML model | `storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/` (SHA-256 `fbc2a300…cde1`) | **Not independently verified.** Published by Google MediaPipe, whose repository is Apache-2.0; confirm against the official model card before any public redistribution | Committed at `public/models/hand_landmarker.task` (7.8 MB) |
+| Test hand footage | Image/video | MediaPipe sample photo used only for local integration checks in a scratch directory | Unknown — **not committed and must not be redistributed** | Not part of the repo |
 | Cormorant Garamond, Inter | Fonts | Google Fonts | SIL OFL 1.1 | Loaded from Google Fonts CDN |
 | Composition artwork | SVG | Generated in code (`CompositionArt`) | Project code | In use |
 

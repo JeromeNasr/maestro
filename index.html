@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="MAESTRO — conduct a virtual orchestra with your hands. Runs entirely in your browser." />
+    <!--
+      Privacy enforcement: the page may only open network connections to itself, the dev-server websocket, and the two
+      CDN fallbacks for the MediaPipe model/runtime. This also blocks MediaPipe's built-in usage-logging POSTs to
+      odml.pa.googleapis.com, so nothing from the camera pipeline can leave the browser. (Only connect-src is set.)
+    -->
+    <meta http-equiv="Content-Security-Policy" content="connect-src 'self' blob: data: ws://localhost:* ws://127.0.0.1:* https://cdn.jsdelivr.net https://storage.googleapis.com" />
     <meta name="theme-color" content="#0b0a09" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />

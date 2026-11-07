@@ -54,22 +54,25 @@ describe('Library', () => {
   })
 })
 
-describe('Studio (Phase 1)', () => {
-  it('does not request the camera and disables every unimplemented control', () => {
+describe('Studio (Phase 2)', () => {
+  it('does not request the camera on load, and keeps unimplemented playback/mixer controls disabled', () => {
     const getUserMedia = vi.fn()
     Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia }, configurable: true })
     renderAt('/studio')
     expect(getUserMedia).not.toHaveBeenCalled()
-    const buttons = screen.getAllByRole('button').filter((b) => !/menu|close/i.test(b.textContent ?? ''))
-    expect(buttons.length).toBeGreaterThan(10)
-    for (const b of buttons) expect(b).toBeDisabled()
-    for (const s of screen.getAllByRole('slider')) expect(s).toBeDisabled()
+    for (const name of ['Start', 'Pause', 'Resume', 'Stop', 'Reset']) expect(screen.getByRole('button', { name })).toBeDisabled()
+    const mixer = screen.getByRole('region', { name: /orchestra/i })
+    for (const b of within(mixer).getAllByRole('button')) expect(b).toBeDisabled()
+    for (const s of within(mixer).getAllByRole('slider')) expect(s).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Enable camera' })).toBeEnabled()
   })
 
   it('shows no fabricated live values', () => {
     renderAt('/studio')
     const readout = screen.getByRole('region', { name: /performance/i })
-    expect(within(readout).getByText('BPM').nextSibling).toHaveTextContent('—')
+    for (const label of ['BPM', 'Beats detected', 'Position', 'Dynamics', 'Tracking confidence']) {
+      expect(within(readout).getByText(label).nextSibling).toHaveTextContent('—')
+    }
   })
 })
 

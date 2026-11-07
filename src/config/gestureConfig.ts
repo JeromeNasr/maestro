@@ -72,6 +72,21 @@ export interface TrackingConfig {
   handednessMode: 'auto' | 'as-reported' | 'swapped'
 }
 
+export interface CalibrationConfig {
+  /** Valid single-hand frames required per handedness step. */
+  samplesPerHand: number
+  /** Fraction of those frames that must carry the same reported label, otherwise the step fails. */
+  minLabelAgreement: number
+  /** The palm must be this far beyond the preview's centre line (0–0.5) to count as "on that side". */
+  sideMargin: number
+  /** Duration of the range-capture step (ms). */
+  rangeDurationMs: number
+  /** Minimum extent (normalised) a hand must travel in x or y for its range to be accepted. */
+  minRangeSpan: number
+  /** Each step fails if it has not completed within this time (ms). */
+  stepTimeoutMs: number
+}
+
 export interface GestureConfig {
   timeSignature: TimeSignature
   beat: BeatConfig
@@ -79,6 +94,7 @@ export interface GestureConfig {
   dynamics: DynamicsConfig
   cues: CueConfig
   tracking: TrackingConfig
+  calibration: CalibrationConfig
 }
 
 export const DEFAULT_GESTURE_CONFIG: GestureConfig = {
@@ -96,12 +112,14 @@ export const DEFAULT_GESTURE_CONFIG: GestureConfig = {
     minConfidence: 0.7,
   },
   tracking: {
-    filterMinCutoff: 1.2,
-    filterBeta: 0.02,
+    // One-Euro parameters for coordinates normalised to the image (speeds are image-widths per second).
+    filterMinCutoff: 1.5,
+    filterBeta: 4,
     lossGraceMs: 300,
     minDetectionConfidence: 0.6,
     minTrackingConfidence: 0.5,
     sensitivity: 1,
     handednessMode: 'auto',
   },
+  calibration: { samplesPerHand: 20, minLabelAgreement: 0.8, sideMargin: 0.08, rangeDurationMs: 6000, minRangeSpan: 0.12, stepTimeoutMs: 30000 },
 }
