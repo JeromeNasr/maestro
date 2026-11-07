@@ -32,7 +32,7 @@ function Latest({ r }: { r: PerformanceRecord }) {
 function BpmHistory({ records }: { records: PerformanceRecord[] }) {
   const max = Math.max(...records.map((r) => r.averageBpm), 1)
   return (
-    <svg viewBox={`0 0 ${records.length * 40 + 10} 90`} className="h-32 w-full max-w-md" role="img" aria-label="Average BPM per performance">
+    <svg viewBox={`0 0 ${records.length * 40 + 10} 90`} preserveAspectRatio="xMinYMax meet" className="h-32 w-full max-w-md" role="img" aria-label="Average BPM per performance">
       {records.map((r, i) => {
         const h = (r.averageBpm / max) * 70
         return (

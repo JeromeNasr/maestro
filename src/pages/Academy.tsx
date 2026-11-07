@@ -41,7 +41,8 @@ export function Academy() {
             ))}
           </ul>
         </nav>
-        <article aria-live="polite">
+        <article>
+          <p className="sr-only" role="status">Showing lesson: {lesson.title}</p>
           <h2 className="text-4xl">{lesson.title}</h2>
           <p className="mt-1 text-gold-soft">{lesson.summary}</p>
           <div className="mt-6 max-w-2xl space-y-4 leading-relaxed text-ivory-dim">

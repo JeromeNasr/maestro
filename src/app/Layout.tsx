@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, NavLink, Outlet, ScrollRestoration, useLocation } from 'react-router-dom'
 import { Logo } from '@/components/ui/Logo'
 
 const NAV = [
@@ -9,6 +9,14 @@ const NAV = [
   { to: '/analytics', label: 'Analytics' },
 ]
 
+const TITLES: Record<string, string> = {
+  '/': 'Conduct Your Own Orchestra',
+  '/library': 'Library',
+  '/studio': 'Conducting Studio',
+  '/academy': 'Conducting Academy',
+  '/analytics': 'Analytics',
+}
+
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `px-1 py-2 text-sm tracking-wide transition-colors ${isActive ? 'text-gold' : 'text-ivory-dim hover:text-ivory'}`
 
@@ -16,6 +24,10 @@ export function Layout() {
   const [open, setOpen] = useState(false)
   const { pathname } = useLocation()
   const studio = pathname === '/studio'
+  useEffect(() => {
+    const t = TITLES[pathname]
+    document.title = t ? `${t} — MAESTRO` : 'Page not found — MAESTRO'
+  }, [pathname])
   return (
     <div className="flex min-h-screen flex-col">
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:bg-gold focus:px-3 focus:py-2 focus:text-ink-950">
@@ -57,6 +69,7 @@ export function Layout() {
         <Outlet />
       </main>
       {!studio && <Footer />}
+      <ScrollRestoration />
     </div>
   )
 }

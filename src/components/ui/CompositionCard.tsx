@@ -43,7 +43,7 @@ export function CompositionCard({ composition: c, selected = false, onSelect }: 
         </dl>
         {onSelect && (
           <button
-            className={`btn mt-5 ${selected ? 'btn-ghost' : 'btn-gold'}`}
+            className={`btn mt-5 ${available && !selected ? 'btn-gold' : 'btn-ghost'}`}
             disabled={!available}
             aria-pressed={selected}
             onClick={() => onSelect(c.id)}

@@ -34,7 +34,7 @@ export function Library() {
           <span className="text-ivory-dim" data-testid="selection-summary">
             Selected: <span className="text-gold-soft">{selected?.title ?? 'none'}</span>
           </span>
-          <Link to="/studio" className="btn btn-gold !py-2">Open studio</Link>
+          <Link to="/studio" className="btn btn-gold whitespace-nowrap !py-2">Open studio</Link>
         </div>
       </div>
 

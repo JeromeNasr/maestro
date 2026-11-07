@@ -1,4 +1,4 @@
-import { SECTIONS } from './SectionMixer'
+import { SECTIONS } from '@/orchestra/sections'
 import { PhaseTag } from '@/components/ui/StatusTag'
 
 import { DYNAMIC_MARKS, markForLevel } from '@/gesture/dynamicsMapper'
@@ -8,13 +8,15 @@ export function DynamicsMeter({ level = null }: { level?: number | null }) {
   const active = level === null ? -1 : DYNAMIC_MARKS.indexOf(markForLevel(level))
   return (
     <div role="img" aria-label={level === null ? 'Dynamics: no data' : `Dynamics level ${DYNAMIC_MARKS[active]}`}>
-      <div className="flex h-24 items-end gap-1.5">
+      <div className="flex items-end gap-1.5">
         {DYNAMIC_MARKS.map((m, i) => (
           <div key={m} className="flex flex-1 flex-col items-center gap-1.5">
-            <div
-              className={`w-full rounded-sm transition-all duration-300 ${i <= active ? 'bg-gold' : 'bg-ink-600'}`}
-              style={{ height: `${28 + i * 14}%` }}
-            />
+            <div className="flex h-16 w-full items-end">
+              <div
+                className={`w-full rounded-sm transition-all duration-300 ${i <= active ? 'bg-gold' : 'bg-ink-600'}`}
+                style={{ height: `${28 + i * 14}%` }}
+              />
+            </div>
             <span className={`font-serif text-sm italic ${i === active ? 'text-gold' : 'text-ivory-mute'}`}>{m}</span>
           </div>
         ))}
@@ -37,15 +39,15 @@ export function BeatPulse({ beatKey }: { beatKey?: number }) {
 
 export function OrchestraActivity({ levels }: { levels?: Record<string, number> }) {
   return (
-    <ul className="flex h-24 items-end gap-3" aria-label="Section activity">
+    <ul className="space-y-2" aria-label="Section activity">
       {SECTIONS.map((s) => {
         const v = levels?.[s.id] ?? 0
         return (
-          <li key={s.id} className="flex flex-1 flex-col items-center gap-1.5">
-            <div className="flex h-16 w-full items-end rounded-sm bg-ink-700">
-              <div className="w-full rounded-sm bg-bronze transition-all duration-150" style={{ height: `${Math.round(v * 100)}%` }} />
+          <li key={s.id} className="flex items-center gap-2">
+            <span className="w-[72px] shrink-0 text-[11px] text-ivory-mute">{s.label}</span>
+            <div className="h-3 min-w-0 flex-1 rounded-sm bg-ink-700">
+              <div className="h-full rounded-sm bg-bronze transition-all duration-150" style={{ width: `${Math.round(v * 100)}%` }} />
             </div>
-            <span className="text-[10px] uppercase tracking-widest text-ivory-mute">{s.label.slice(0, 5)}</span>
           </li>
         )
       })}

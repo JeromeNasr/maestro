@@ -101,3 +101,17 @@ describe('Academy', () => {
     expect(screen.getByTestId('dynamic-mark')).toHaveTextContent('mf')
   })
 })
+
+describe('navigation behaviour', () => {
+  it('updates the document title per route', async () => {
+    renderAt('/library')
+    expect(document.title).toBe('Library — MAESTRO')
+    await userEvent.click(screen.getByRole('navigation', { name: 'Primary' }).querySelector('a[href="/academy"]')!)
+    expect(document.title).toBe('Conducting Academy — MAESTRO')
+  })
+
+  it('has no live region wrapping the animated lesson content', () => {
+    const { container } = renderAt('/academy')
+    expect(container.querySelector('article[aria-live]')).toBeNull()
+  })
+})

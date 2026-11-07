@@ -14,7 +14,7 @@ export function StatusTag({ kind, children }: { kind: Kind; children?: ReactNode
   const label =
     children ?? { demo: 'Demo data', phase: 'Not yet implemented', measured: 'Measured', estimate: 'Estimate' }[kind]
   return (
-    <span className={`inline-block rounded-sm border px-1.5 py-px text-[10px] uppercase tracking-widest ${STYLES[kind]}`}>
+    <span className={`inline-block whitespace-nowrap rounded-sm border px-1.5 py-px text-[10px] uppercase tracking-widest ${STYLES[kind]}`}>
       {label}
     </span>
   )

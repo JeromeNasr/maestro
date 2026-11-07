@@ -62,7 +62,7 @@ export function Landing() {
         <SectionHeading eyebrow="Featured compositions" title="A programme for the podium">
           Original demonstration music comes first; the classical favourites follow once licensed arrangements are verified.
         </SectionHeading>
-        <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-12 grid gap-6 md:grid-cols-2">
           {COMPOSITIONS.map((c) => <CompositionCard key={c.id} composition={c} />)}
         </div>
       </section>

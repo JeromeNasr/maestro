@@ -1,11 +1,6 @@
 import { PhaseTag } from '@/components/ui/StatusTag'
+import { SECTIONS } from '@/orchestra/sections'
 
-export const SECTIONS = [
-  { id: 'strings', label: 'Strings' },
-  { id: 'woodwinds', label: 'Woodwinds' },
-  { id: 'brass', label: 'Brass' },
-  { id: 'percussion', label: 'Percussion' },
-] as const
 
 /** Phase 1: controls are disabled — they are not connected to any audio yet (Phase 4). */
 export function SectionMixer() {
