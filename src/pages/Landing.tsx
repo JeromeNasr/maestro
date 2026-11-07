@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { COMPOSITIONS } from '@/library/compositions'
 import { CompositionCard } from '@/components/ui/CompositionCard'
 import { SectionHeading } from '@/components/ui/SectionHeading'

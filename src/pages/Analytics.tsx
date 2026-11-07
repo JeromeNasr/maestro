@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { historyStore, clearHistory } from '@/analytics/historyStore'
 import { SAMPLE_RECORDS } from '@/analytics/sampleData'
 import { formatSeconds, summarise } from '@/analytics/metrics'

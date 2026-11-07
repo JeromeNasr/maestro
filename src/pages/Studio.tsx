@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { getComposition } from '@/library/compositions'
 import { selectedCompositionId } from '@/library/selection'
 import { useStore } from '@/lib/store'

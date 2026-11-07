@@ -1,4 +1,5 @@
-import { createBrowserRouter, RouterProvider, type RouteObject } from 'react-router-dom'
+import { createBrowserRouter, type RouteObject } from 'react-router'
+import { RouterProvider } from 'react-router/dom'
 import { Layout } from './Layout'
 import { Landing } from '@/pages/Landing'
 import { Library } from '@/pages/Library'

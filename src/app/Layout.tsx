@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, NavLink, Outlet, ScrollRestoration, useLocation } from 'react-router-dom'
+import { Link, NavLink, Outlet, ScrollRestoration, useLocation } from 'react-router'
 import { Logo } from '@/components/ui/Logo'
 
 const NAV = [
