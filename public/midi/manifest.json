@@ -1,0 +1,67 @@
+[
+  {
+    "id": "aurora-etude",
+    "file": "aurora-etude.mid",
+    "title": "Aurora Étude",
+    "bars": 64,
+    "meter": 4,
+    "bpm": 84,
+    "notes": 1641,
+    "durationSec": 183.9,
+    "tracks": [
+      "Violins I",
+      "Violas",
+      "Cellos & Basses",
+      "Flute",
+      "Oboe",
+      "Clarinet",
+      "Horns",
+      "Trumpets",
+      "Timpani",
+      "Percussion"
+    ]
+  },
+  {
+    "id": "evening-minuet",
+    "file": "evening-minuet.mid",
+    "title": "Evening Minuet",
+    "bars": 64,
+    "meter": 3,
+    "bpm": 100,
+    "notes": 890,
+    "durationSec": 115.7,
+    "tracks": [
+      "Violins I",
+      "Violas",
+      "Cellos & Basses",
+      "Flute",
+      "Oboe",
+      "Clarinet",
+      "Horns",
+      "Trumpets",
+      "Timpani",
+      "Percussion"
+    ]
+  },
+  {
+    "id": "parade-march",
+    "file": "parade-march.mid",
+    "title": "Parade March",
+    "bars": 96,
+    "meter": 2,
+    "bpm": 104,
+    "notes": 1753,
+    "durationSec": 111.2,
+    "tracks": [
+      "Violins I",
+      "Violas",
+      "Cellos & Basses",
+      "Flute",
+      "Clarinet",
+      "Horns",
+      "Trumpets",
+      "Timpani",
+      "Percussion"
+    ]
+  }
+]

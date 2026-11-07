@@ -27,6 +27,13 @@ export interface Composition {
   difficulty: Difficulty
   description: string
   status: CompositionStatus
+  /**
+   * Time signatures the piece can be conducted in. The first is the written meter. A 4/4 piece can also be conducted
+   * "in two" (2/4): each conducted beat then spans two quarter notes.
+   */
+  conductingOptions: TimeSignature[]
+  /** Optional section overrides by MIDI track name (for arrangements whose instrument programs are wrong). */
+  sectionOverrides?: Record<string, import('@/orchestra/sections').SectionId>
   /** Path under /public to the MIDI file (set when status is 'available'). */
   midiUrl?: string
   /** Licence record for the MIDI arrangement; required when status is 'available'. */

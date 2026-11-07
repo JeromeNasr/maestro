@@ -33,7 +33,7 @@ describe('searchCompositions', () => {
     expect(searchCompositions('vIvAlDi').map((c) => c.id)).toEqual(['vivaldi-spring'])
   })
   it('matches time signature', () => {
-    expect(searchCompositions('3/4').map((c) => c.id)).toEqual(['handel-water-music'])
+    expect(searchCompositions('3/4').map((c) => c.id)).toEqual(['evening-minuet', 'handel-water-music'])
   })
   it('returns nothing for a non-match', () => {
     expect(searchCompositions('zzz')).toEqual([])
@@ -42,13 +42,13 @@ describe('searchCompositions', () => {
 
 describe('selection', () => {
   it('selects available compositions', () => {
-    expect(selectComposition('maestro-demo-001')).toBe(true)
-    expect(selectedCompositionId.get()).toBe('maestro-demo-001')
+    expect(selectComposition('aurora-etude')).toBe(true)
+    expect(selectedCompositionId.get()).toBe('aurora-etude')
   })
   it('refuses planned and unknown compositions', () => {
     expect(selectComposition('vivaldi-spring')).toBe(false)
     expect(selectComposition('nope')).toBe(false)
-    expect(selectedCompositionId.get()).toBe('maestro-demo-001')
+    expect(selectedCompositionId.get()).toBe('aurora-etude')
   })
 })
 

@@ -22,7 +22,7 @@ export function CompositionCard({ composition: c, selected = false, onSelect }: 
       <div className="flex flex-1 flex-col p-5">
         <div className="flex flex-wrap items-center gap-2">
           <StatusTag kind={available ? 'measured' : 'phase'}>{available ? 'Available' : 'Coming later'}</StatusTag>
-          {c.id === 'maestro-demo-001' && <StatusTag kind="demo">Original demo</StatusTag>}
+          {available && <StatusTag kind="demo">Original · CC0</StatusTag>}
         </div>
         <h3 className="mt-3 text-2xl leading-snug">{c.title}</h3>
         <p className="text-sm text-gold-soft">{c.composer}</p>

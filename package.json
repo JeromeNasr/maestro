@@ -13,7 +13,8 @@
     "postinstall": "node scripts/setup-mediapipe-assets.mjs",
     "test:e2e": "playwright test",
     "lint": "eslint .",
-    "verify": "npm run typecheck && npm run lint && npm test && npm run build"
+    "verify": "npm run typecheck && npm run lint && npm test && npm run build",
+    "generate:midi": "node scripts/generate-midi.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.2.2",

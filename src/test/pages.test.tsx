@@ -35,7 +35,7 @@ describe('Library', () => {
     await userEvent.type(screen.getByRole('searchbox'), 'handel')
     expect(screen.getByRole('article', { name: /water music/i })).toBeInTheDocument()
     expect(screen.queryByRole('article', { name: /brandenburg/i })).not.toBeInTheDocument()
-    expect(screen.getByText(/1 of 4 compositions/)).toBeInTheDocument()
+    expect(screen.getByText(/1 of 6 compositions/)).toBeInTheDocument()
   })
 
   it('shows an empty state when nothing matches', async () => {
@@ -50,7 +50,7 @@ describe('Library', () => {
     expect(within(planned).getByRole('button')).toBeDisabled()
     const demo = screen.getByRole('article', { name: /aurora/i })
     expect(within(demo).getByRole('button')).toHaveAttribute('aria-pressed', 'true')
-    expect(selectedCompositionId.get()).toBe('maestro-demo-001')
+    expect(selectedCompositionId.get()).toBe('aurora-etude')
   })
 })
 
