@@ -1,38 +1,37 @@
-# Testing MAESTRO
+# MAESTRO — testing
 
-## What is automated (and what it does NOT prove)
+## 1. Automated coverage
 
-| Layer | Command | Covers |
-|---|---|---|
-| Unit / component (Vitest, jsdom) | `npm test` | Pure vision pipeline, calibration, tracking-loss handling, camera lifecycle (with fake streams), overlay drawing, session state machine, Studio UI flows, privacy policy (CSP) |
-| End-to-end (Playwright, Chromium) | `npm run test:e2e` | Built app with the **real MediaPipe model and WASM**, driven through the real `getUserMedia` API using Chromium's **fake capture device** |
-| Types / build | `npm run typecheck`, `npm run build` | |
+| Command | What it runs |
+|---|---|
+| `npm test` | Vitest, 39 files / 543 tests: gesture engine (stroke segmenter, pattern tracker 2/4·3/4·4/4, tempo estimator, dynamics, cues, tracking loss/recovery, false gestures) on synthetic landmark trajectories; MIDI parsing, section mapping, sequencer scheduling and tempo glide, mixer mute/solo, dynamics, audio lifecycle; session recorder, analytics, Academy progress; camera errors/cleanup; Studio UI. |
+| `npm run test:e2e` | Playwright (Chromium, fake capture device): 27 specs in the `fake-camera` project — pages, navigation, camera permission flow, calibration, Studio, audio init, demo playback, tempo affects scheduled events, dynamics change level, mute/solo, stop releases AudioContexts, sessions saved, analytics real, axe accessibility, privacy (no external requests), UI frame-rate guard. |
+| `MAESTRO_FAKE_HAND_VIDEO=<y4m> npm run test:e2e` | Optional extra project: real MediaPipe detection on a hand video through the worker. The hand video is not committed (see `LICENSES.md`). |
+| `npm run verify` | typecheck + lint + unit tests + production build. |
 
-First e2e run on a machine: `npx playwright install chromium`.
-Optional hand-detection e2e: `MAESTRO_FAKE_HAND_VIDEO=/path/to/clip.y4m npm run test:e2e -- --project=fake-camera-with-hands`
-(a clip showing hands; none is committed because no hand footage with a verified licence is included).
+What automated tests **cannot** show: that gesture thresholds suit real hands, real-camera lighting/latency, real handedness labels, or how the audio sounds on your speakers. Everything below needs a person with a webcam.
 
-**None of this is a physical webcam test.** A fake device plays a synthetic pattern or a video file; it cannot show how
-detection behaves with your camera, lighting, distance, skin tone, GPU, or real conducting motion. Everything under
-"Manual test on your laptop" below must be done by a person.
+## 2. Physical webcam checklist (nothing here has been verified on a physical camera)
 
-## Manual test on your laptop (Linux, Chrome/Chromium recommended; also try Firefox)
+Use Chromium or Chrome, `npm run build && npm run preview`, open http://localhost:4173. Good light, hands visible, plain background.
 
-Setup: `npm ci && npm run dev`, open <http://localhost:5173/studio>. Open DevTools (F12) → Console and Network.
+1. **Permission only on click.** Load the Studio: no permission prompt appears. Click *Enable camera* → prompt appears. Deny it → a clear message and a working *Retry*. Allow it.
+2. **Camera light/release.** Leave the Studio (or press Stop camera): the camera light turns off.
+3. **Preview is mirrored.** Raise your right hand; it appears on the right of the preview (like a mirror).
+4. **Calibration / handedness.** Run calibration as prompted (raise the hand asked for). Outcome should say whether labels were swapped; confirm the skeleton colours/labels match the hand you raise. If it is wrong, set handedness manually in settings.
+5. **Landmarks.** 21 points per hand, both hands tracked, skeleton follows without large lag. Note FPS, delegate (GPU/CPU) and worker/main-thread in the diagnostics. Dev server uses main thread; preview/production uses the worker.
+6. **Tracking loss.** Drop your hands out of frame: status shows lost; music holds tempo and does not crash. Re-enter: tracking recovers.
+7. **Conducting, 4/4.** Pick *Aurora Étude*, start (Start gesture or button). Beat with the right hand (down, left, right, up). The beat indicator should follow your strokes. Try ~60, ~90, ~120 BPM.
+8. **3/4 and 2/4.** *Evening Minuet* (down, right, up) and *Parade March* (down, up).
+9. **Tempo following.** Speed up/slow down gradually: playback follows after ~3–5 beats, smoothly, with no jumps in position and unchanged pitch.
+10. **Random waving.** Wave erratically: tempo should barely move.
+11. **Dynamics.** Make the beat bigger/smaller (or raise/lower the dynamics hand): level and brightness change; crescendo/diminuendo are smooth.
+12. **Cues.** Hold both hands still with the stop/pause pose for the configured time: transport pauses/stops. Quick incidental poses during conducting must not trigger. Space pauses, Esc stops.
+13. **Tab hidden.** Switch tabs and return: no stuck notes or runaway tempo.
+14. **Tuning panel.** Adjust sensitivity/thresholds if beats are missed or spurious; note the values that work.
+15. **Mixer.** Mute/solo sections; volumes respond; meters move.
+16. **Sessions.** After a conducting session ≥5 s, Analytics lists it with measured vs estimate vs unavailable metrics; sessions with no tracked hands show unavailable, not "perfect".
+17. **Privacy.** In DevTools → Network, no request leaves localhost apart from an optional font fetch; a CSP console message about `odml.pa.googleapis.com` (blocked MediaPipe telemetry) is expected.
+18. **Audio.** Check loudness at master max (no clipping), instrument distinctness, no clicks on start/pause/stop.
 
-1. **No camera on load.** Load the page. No permission prompt, no camera light, Network shows no camera activity. ☐
-2. **Enable camera.** Click *Enable camera* → browser prompt → Allow. Expect: "Waiting for camera permission…" → "Loading hand-tracking model…" → *Live camera*; your mirrored image appears. ☐
-3. **Hands + skeleton.** Show both hands. Expect a 21-point skeleton on each hand that sticks to your real hand (check fingertips), labelled LEFT/RIGHT with a %. Move your hand to the right of the screen: it must move right on screen (mirror view). ☐
-4. **Handedness (important).** Before calibrating, status says *Not verified*. Raise your RIGHT hand alone. Note which label the app shows and where it is on screen. Then press **Calibrate** and follow the 3 steps. Record the result card ("matched" or "reversed") and whether the labels are right afterwards. Reload the page: it should say *Verified by calibration*. *Clear calibration* removes it. ☐
-5. **Tracking loss.** Lower a hand out of view: the label shows *Signal lost · holding…* (≤ 0.3 s, skeleton dimmed) then *Not detected*. Raise it again: it recovers without a jump. ☐
-6. **Performance.** Read the line "N fps · N ms inference · GPU/CPU". Note the numbers and whether the page stays responsive (try scrolling). If GPU is slow (> 80 ms) the app switches to CPU once and says so. Target to report: ≥ 20 fps and a responsive UI. ☐
-7. **Sensitivity.** Move the slider down/up; detection should get stricter/looser (hands partly out of frame). ☐
-8. **Camera release.** Click *Stop camera*: camera light turns off immediately. Enable again, then navigate to another page: light turns off. Enable again and close the tab: light turns off. ☐
-9. **Denied permission.** In the browser's site settings set Camera to *Block*, reload, Enable camera. Expect the "Camera access was blocked" message with instructions. Allow it again → *Try again* works. ☐
-10. **Camera busy / missing.** Start the camera in another app (or tab) and try again → "Camera is unavailable" message. If you can, unplug a USB webcam while running → "Camera disconnected". ☐
-11. **Background tab.** Switch to another tab: status shows *Paused (tab hidden)* and CPU drops; switching back resumes. ☐
-12. **Demo mode.** With the camera stopped, click *Demo mode*: two synthetic hands labelled "Demonstration — synthetic hands" move; Calibrate is disabled. ☐
-13. **Privacy.** With the camera running, the Network tab should show no requests after the model loads. One red Console message *"Refused to connect to https://odml.pa.googleapis.com/v1/log … Content Security Policy"* is **expected**: MediaPipe tries to send a ~140-byte usage log and MAESTRO's CSP blocks it. ☐
-14. **Conditions.** Repeat 3–5 with dim light, a busy background, and at ~0.5 m and ~1.5 m distance. Note where it fails. ☐
-
-Please report: browser + version, camera model, CPU/GPU, the numbers from step 6, the step-4 handedness outcome, and anything that failed.
+Please record: browser/version, GPU/CPU delegate, FPS, handedness result, and any missed or false beats with your approximate BPM.

@@ -4,6 +4,8 @@ import { createMemoryRouter } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
 import { routes } from '@/app/App'
 import { calibrationStore } from '@/vision/calibration'
+import { DEFAULT_GESTURE_CONFIG } from '@/config/gestureConfig'
+import { gestureSettings } from '@/config/settings'
 import { selectedCompositionId } from '@/library/selection'
 import { SECTIONS } from '@/orchestra/sections'
 import { namedError } from './fakeMedia'
@@ -254,5 +256,30 @@ describe('Studio — composition and conducting pattern', () => {
     expect(screen.queryByRole('slider', { name: /fixed tempo/i })).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('radio', { name: 'Fixed tempo' }))
     expect(screen.getByRole('slider', { name: /fixed tempo/i })).toBeEnabled()
+  })
+})
+
+describe('Studio — tuning panel', () => {
+  it('changes real recogniser thresholds live, persists them, and resets to defaults', async () => {
+    await renderStudio()
+    await userEvent.click(screen.getByText(/^Tuning/))
+    const slider = screen.getByRole('slider', { name: 'Minimum stroke size' })
+    fireEvent.change(slider, { target: { value: '1.2' } })
+    expect(gestureSettings.get().beat.minAmplitude).toBeCloseTo(1.2)
+    expect(JSON.parse(localStorage.getItem('maestro.gestureConfig.v1')!).beat.minAmplitude).toBeCloseTo(1.2) // persisted
+    expect(screen.getByText(/1 changed/)).toBeInTheDocument()
+    fireEvent.change(screen.getByRole('slider', { name: 'Stop hold time' }), { target: { value: '2000' } })
+    expect(gestureSettings.get().cues.stopHoldMs).toBe(2000)
+    await userEvent.click(screen.getByRole('checkbox', { name: /open right palm/i }))
+    expect(gestureSettings.get().cues.openPalmPauseEnabled).toBe(true)
+    await userEvent.click(screen.getByRole('button', { name: 'Reset all to defaults' }))
+    expect(gestureSettings.get()).toEqual(DEFAULT_GESTURE_CONFIG)
+  })
+
+  it('values outside a parameter range are clamped', async () => {
+    await renderStudio()
+    await userEvent.click(screen.getByText(/^Tuning/))
+    fireEvent.change(screen.getByRole('slider', { name: 'Direction strictness' }), { target: { value: '5' } })
+    expect(gestureSettings.get().beat.directionTolerance).toBeLessThanOrEqual(0.9)
   })
 })

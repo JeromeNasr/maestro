@@ -249,5 +249,3 @@ export const LESSONS: Lesson[] = [
     exercises: [],
   },
 ]
-
-export const getLesson = (id: string) => LESSONS.find((l) => l.id === id)

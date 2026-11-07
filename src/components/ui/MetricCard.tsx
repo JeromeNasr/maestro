@@ -13,8 +13,10 @@ export function MetricCard({ label, value, kind, note }: { label: string; value:
       <dt className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-widest text-ivory-mute">
         {label} <StatusTag kind={missing ? 'unavailable' : kind} />
       </dt>
-      <dd className={`mt-1 font-serif text-4xl ${missing ? 'text-ivory-mute' : ''}`}>{missing ? '—' : value}</dd>
-      {note && <p className="mt-1 text-xs leading-relaxed text-ivory-mute">{note}</p>}
+      <dd className="mt-1">
+        <span className={`block font-serif text-4xl ${missing ? 'text-ivory-mute' : ''}`}>{missing ? '—' : value}</span>
+        {note && <span className="mt-1 block text-xs leading-relaxed text-ivory-mute">{note}</span>}
+      </dd>
     </div>
   )
 }

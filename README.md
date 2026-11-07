@@ -1,13 +1,10 @@
 # MAESTRO — Conduct Your Own Orchestra
 
-Browser-based virtual orchestra controlled by webcam hand tracking. It runs entirely in the browser: no backend, no paid services, and camera frames never leave your machine.
+Conduct a virtual orchestra with your hands. Your **right hand** sets the tempo (beat patterns in 2/4, 3/4 and 4/4), your **left hand** shapes the dynamics (pp → ff), and a real orchestra — four synthesised sections playing real MIDI scores — follows you. It runs entirely in your browser: **no backend, no account, no API keys, and camera frames never leave your machine.**
 
-> **Status: Phase 2 of 7.** The interface plus webcam capture, MediaPipe hand tracking (both hands, 21-point skeleton), left/right calibration and a demonstration mode are implemented. Gestures, tempo/dynamics and audio are **not implemented yet**; their controls are disabled and labelled. Camera behaviour has **not yet been verified on a physical webcam** (see `TESTING.md`). Details: `CLAUDE.md`.
+## Install and run (Linux)
 
-## Run locally (Linux)
-
-**Requirements:** Git, and Node.js **22.22.2 or newer** (npm is included). Check with `node -v`.
-If your distribution's Node is older, install a current one with [nvm](https://github.com/nvm-sh/nvm) (`nvm install 22` — an `.nvmrc` is provided, so `nvm install` / `nvm use` also works).
+Requirements: Git and Node.js **22.22.2 or newer** (`node -v`). If your distribution's Node is older, use [nvm](https://github.com/nvm-sh/nvm): `nvm install` (an `.nvmrc` is provided).
 
 ```bash
 git clone <repository-url> maestro
@@ -22,27 +19,34 @@ npm ci
 npm run dev
 ```
 
-Then open <http://localhost:5173>, go to **Studio**, and press **Enable camera** (the browser will ask permission; it is never requested before). `npm ci` installs the exact versions in `package-lock.json` (`npm install` also works) and, via a `postinstall` script, copies the MediaPipe WASM runtime into `public/`; the hand model itself is committed in the repo, so no extra download is needed.
+Open <http://localhost:5173>, choose **Studio**, then:
 
-No camera? Use **Demo mode** in the Studio (synthetic hands, clearly labelled).
+1. **Enable camera** (the browser asks; nothing is requested before this) and, once, **Calibrate** — it verifies which hand is which against the mirrored preview and learns your range.
+2. **Start** (a click is required by browsers to start audio).
+3. Conduct. Right hand: down-left-right-up in 4/4 (down-right-up in 3/4, down-up in 2/4). Left hand: higher = louder.
+4. Both hands raised and held still pauses/resumes; both lowered and held still stops. **Space** pauses, **Esc** stops, always.
 
-## Other commands
+No camera? **Virtual conductor** (synthetic hands, clearly labelled) drives the same recogniser so you can hear tempo and dynamics follow.
 
+`npm ci` installs the exact versions in `package-lock.json` and, via `postinstall`, copies the MediaPipe WASM runtime into `public/` (the hand model is committed in the repo, so nothing else is downloaded).
+
+## What's in it
+- **Studio** — camera + skeleton overlay, live BPM/beat/dynamics, mixer with real output meters (volume, mute, solo per section), tempo mode (follow / fixed), conducting-in-two, Tuning panel, always-visible pause/stop, session summary.
+- **Library** — three original playable pieces (Aurora Étude 4/4, Evening Minuet 3/4, Parade March 2/4). Bach, Vivaldi and Handel are listed as planned: no verified-licence arrangement could be obtained.
+- **Academy** — 11 lessons with quizzes, a tap-tempo exercise and camera exercises judged by the real recogniser. Progress counts only what you did.
+- **Analytics** — saved sessions with every figure marked *measured*, *estimate* or *unavailable*; export as JSON.
+
+## Commands
 | Command | Purpose |
 |---|---|
-| `npm test` | Run the Vitest suite |
-| `npm run typecheck` | TypeScript check |
-| `npm run build` | Typecheck + production build into `dist/` |
-| `npm run preview` | Serve the production build at <http://localhost:4173> |
-| `npm run test:e2e` | Playwright end-to-end checks (first run: `npx playwright install chromium`) |
+| `npm run dev` / `npm run preview` | dev server (5173) / serve the production build (4173) |
+| `npm run verify` | typecheck + lint + unit tests + production build |
+| `npm test` | Vitest (543 tests) |
+| `npm run test:e2e` | Playwright in Chromium (first time: `npx playwright install chromium`) |
+| `npm run generate:midi` | regenerate the original compositions' `.mid` files |
 
-The app uses client-side routing. If you host `dist/` on a static server, configure it to serve `index.html` for unknown paths, or deep links such as `/studio` will 404.
+## Privacy and network
+Camera frames are processed locally (in a Web Worker) and never uploaded. The only network requests are the page's own files and the Google Fonts stylesheet. A Content-Security-Policy and an egress guard in the worker block everything else — including MediaPipe's built-in usage-logging request, which shows up as one expected console message. If you host the production build, send the same CSP as a **response header** (see `vite.config.ts`) so it also covers the worker, and serve `index.html` for unknown paths (client-side routing).
 
-**Privacy:** camera frames are processed locally in the browser and never uploaded. A Content-Security-Policy restricts which hosts the page may contact; it also blocks MediaPipe's built-in usage-logging requests, which shows up as one expected console message (details in `TESTING.md`).
-
-Fonts (Cormorant Garamond, Inter) load from Google Fonts; offline, the app falls back to system fonts.
-
-## Project documents
-- `CLAUDE.md` — architecture decisions, conventions, known limitations
-- `LICENSES.md` — licence record for every asset
-- `TESTING.md` — automated coverage and the manual checklist for your laptop
+## Documents
+`CLAUDE.md` architecture & decisions · `TESTING.md` automated coverage and the **physical-testing checklist** · `LICENSES.md` every asset's licence.

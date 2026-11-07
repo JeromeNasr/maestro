@@ -51,7 +51,7 @@ export function CameraPanel({ conducting }: { conducting: ConductingSession }) {
     <section className="panel overflow-hidden" aria-labelledby="cam-h">
       <header className="flex flex-wrap items-center justify-between gap-2 border-b hairline px-4 py-3">
         <h2 id="cam-h" className="font-sans text-sm font-medium tracking-wide">Camera &amp; hand tracking</h2>
-        {isDemo ? <StatusTag kind="demo">Demonstration · synthetic hands</StatusTag> : running ? <StatusTag kind="measured">Live camera</StatusTag> : <StatusTag kind="phase">Camera off</StatusTag>}
+        {isDemo ? <StatusTag kind="demo">Demonstration · synthetic hands</StatusTag> : running ? <StatusTag kind="measured">Live camera</StatusTag> : <StatusTag kind="neutral">Camera off</StatusTag>}
       </header>
 
       <div className="relative bg-ink-950" style={{ aspectRatio: `${size.width} / ${size.height}` }}>
@@ -63,7 +63,7 @@ export function CameraPanel({ conducting }: { conducting: ConductingSession }) {
           <div className="absolute inset-0 -z-0 bg-[linear-gradient(rgba(196,163,90,.06)_1px,transparent_1px),linear-gradient(90deg,rgba(196,163,90,.06)_1px,transparent_1px)] bg-[size:10%_10%]" aria-hidden="true" />
         )}
         {isDemo && (
-          <p className="absolute left-3 top-3 rounded-sm border border-bronze bg-ink-950/80 px-2 py-1 text-[11px] uppercase tracking-widest text-bronze">
+          <p className="absolute left-3 top-3 rounded-sm border border-bronze bg-ink-950/80 px-2 py-1 text-[11px] uppercase tracking-widest text-bronze-soft">
             Demonstration — synthetic hands, not detected from a camera
           </p>
         )}

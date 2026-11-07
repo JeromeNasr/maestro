@@ -44,8 +44,10 @@ export function LiveReadout({ session }: { session: ConductingSession }) {
         {rows.map(([k, val, unit]) => (
           <div key={k}>
             <dt className="text-[11px] uppercase tracking-widest text-ivory-mute">{k}</dt>
-            <dd className="mt-1 font-serif text-3xl text-ivory" data-testid={`readout-${k.toLowerCase().replace(/\s+/g, '-')}`}>{val}</dd>
-            {unit && <p className="text-[10px] text-ivory-mute">{unit}</p>}
+            <dd className="mt-1">
+              <span className="block font-serif text-3xl text-ivory" data-testid={`readout-${k.toLowerCase().replace(/\s+/g, '-')}`}>{val}</span>
+              {unit && <span className="block text-[10px] text-ivory-mute">{unit}</span>}
+            </dd>
           </div>
         ))}
       </dl>

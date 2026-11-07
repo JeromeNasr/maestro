@@ -29,6 +29,7 @@ export function TransportPanel({ session }: { session: ConductingSession }) {
       </header>
 
       {status === 'error' && audio.error && <p role="alert" className="mt-3 text-sm text-gold-soft">{audio.error}</p>}
+      {audio.lateNotes > 0 && <p role="status" className="mt-3 text-xs text-gold-soft" data-testid="late-notes">{audio.lateNotes} note{audio.lateNotes === 1 ? ' was' : 's were'} skipped because the browser was too busy to play {audio.lateNotes === 1 ? 'it' : 'them'} on time. Close other tabs or lower the camera load if this keeps growing.</p>}
       {studio.load === 'loading' && <p role="status" className="mt-3 text-sm text-ivory-dim">Loading the score…</p>}
       {studio.load === 'error' && <p role="alert" className="mt-3 text-sm text-gold-soft">{studio.loadError}</p>}
 

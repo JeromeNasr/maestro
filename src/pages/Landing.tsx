@@ -14,10 +14,10 @@ const STEPS = [
 const FEATURES = [
   ['Two hands, two roles', 'Right hand: beat, tempo and start/stop. Left hand: loudness, from pianissimo to fortissimo.'],
   ['Real conducting patterns', 'Educational 2/4, 3/4 and 4/4 patterns — directional strokes, not just “hand moved”.'],
-  ['Genuine MIDI playback', 'Notes are scheduled in musical time, so tempo changes never alter pitch.'],
+  ['Genuine MIDI playback', 'Real MIDI scores, scheduled note by note in musical time, so tempo changes never alter pitch.'],
   ['Four orchestra sections', 'Strings, woodwinds, brass and percussion, each with volume and mute.'],
   ['Private by design', 'Video is processed in your browser by MediaPipe. Nothing is uploaded.'],
-  ['Tunable', 'Thresholds, hold times and sensitivity are configurable.'],
+  ['An Academy that checks you', 'Quizzes and exercises measured by the same recogniser that follows your hands — progress counts only what you did.'],
 ]
 
 const TECH = [
@@ -52,15 +52,15 @@ export function Landing() {
             <Link to="/library" className="btn btn-ghost !px-7 !py-3">Browse the library</Link>
           </div>
           <p className="mt-10 flex max-w-xl flex-wrap items-center gap-2 text-xs text-ivory-mute">
-            <StatusTag kind="phase">Build status</StatusTag>
-            Interface preview (Phase 1 of 7). Hand tracking and audio playback are under construction and are labelled as such wherever they appear.
+            <StatusTag kind="measured">Private</StatusTag>
+            Camera frames are processed in your browser and never uploaded. No account, no backend. Works best in current Chrome, Edge or Firefox.
           </p>
         </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6">
         <SectionHeading eyebrow="Featured compositions" title="A programme for the podium">
-          Original demonstration music comes first; the classical favourites follow once licensed arrangements are verified.
+          Three original pieces — in four, three and two — play today. The classical favourites follow once licensed arrangements can be verified.
         </SectionHeading>
         <div className="mt-12 grid gap-6 md:grid-cols-2">
           {COMPOSITIONS.map((c) => <CompositionCard key={c.id} composition={c} />)}

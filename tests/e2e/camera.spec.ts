@@ -43,7 +43,7 @@ test('camera pipeline makes no external network requests (video stays local)', a
 
 test('demonstration mode needs no camera', async ({ page }) => {
   await page.goto('/studio')
-  await page.getByRole('button', { name: 'Demo mode' }).click()
+  await page.getByRole('button', { name: 'Virtual conductor' }).click()
   await expect(page.getByText(/synthetic hands/).first()).toBeVisible()
   await expect(page.getByTestId('left-status')).toContainText(/tracking/i)
   expect(await gumCalls(page)).toBe(0)

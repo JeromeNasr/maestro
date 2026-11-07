@@ -1,4 +1,4 @@
-/** The four orchestra sections. Shared by the UI now and by the audio engine in Phase 4. */
+/** The four orchestra sections. Shared by the UI, the mixer and the audio engine. */
 export const SECTIONS = [
   { id: 'strings', label: 'Strings' },
   { id: 'woodwinds', label: 'Woodwinds' },

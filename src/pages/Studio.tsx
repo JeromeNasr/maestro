@@ -8,6 +8,7 @@ import { MixerPanel } from '@/components/studio/MixerPanel'
 import { SessionSummary } from '@/components/studio/SessionSummary'
 import { StudioHeader } from '@/components/studio/StudioHeader'
 import { TransportPanel } from '@/components/studio/TransportPanel'
+import { TuningPanel } from '@/components/studio/TuningPanel'
 import { useConductingSession, useStudio } from '@/components/studio/useConductingSession'
 
 /** The conducting studio: camera → hand tracking → gestures → conductor bridge → orchestra, with live feedback. */
@@ -38,6 +39,7 @@ export function Studio() {
           <MixerPanel session={session} />
           <DemoConductorPanel session={session} />
           <ConductingPanel session={session} />
+          <TuningPanel />
         </div>
       </div>
       <EmergencyBar session={session} />

@@ -27,7 +27,7 @@ export function TrackingStatus({ snap }: { snap: VisionSnapshot }) {
       <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
         <span className="text-ivory-mute">Left hand <span data-testid="left-status" className={`ml-1 ${live ? l.tone : 'text-ivory-mute'}`}>{live ? l.text : '—'}</span></span>
         <span className="text-ivory-mute">Right hand <span data-testid="right-status" className={`ml-1 ${live ? r.tone : 'text-ivory-mute'}`}>{live ? r.text : '—'}</span></span>
-        {snap.status === 'paused' && <StatusTag kind="phase">Paused (tab hidden)</StatusTag>}
+        {snap.status === 'paused' && <StatusTag kind="neutral">Paused (tab hidden)</StatusTag>}
       </div>
       <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-ivory-mute">
         <span>

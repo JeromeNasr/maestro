@@ -439,6 +439,21 @@ describe('VisionSession — slow GPU delegate', () => {
     expect(s.createDetector).toHaveBeenCalledTimes(2) // never switches again
   })
 
+  it('a drastically slow GPU delegate (seconds per frame) is replaced after only a few frames', async () => {
+    const gpu = new FakeDetector()
+    gpu.delegate = 'GPU'
+    const cpu = new FakeDetector()
+    const s = setup({ createDetector: (o) => Promise.resolve((o.delegate === 'CPU' ? cpu : gpu) as HandDetector) })
+    gpu.clock = s.clock
+    gpu.costMs = 1500
+    await s.session.startCamera()
+    run(s, 4)
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(s.createDetector).toHaveBeenCalledTimes(2)
+    expect(s.session.store.get().delegate).toBe('CPU')
+  })
+
   it('leaves a fast GPU delegate alone', async () => {
     const gpu = new FakeDetector()
     gpu.delegate = 'GPU'
@@ -483,5 +498,87 @@ describe('VisionSession — slow GPU delegate', () => {
     await Promise.resolve()
     expect(cpu.closed).toBe(true)
     expect(s.session.store.get().status).toBe('idle')
+  })
+})
+
+describe('VisionSession — asynchronous (worker) detection', () => {
+  /** Detector whose results are delivered by the test. */
+  class AsyncDetector extends FakeDetector {
+    calls: { ts: number; resolve: (r: DetectionResult) => void; reject: (e: Error) => void }[] = []
+    detect(_v: HTMLVideoElement, ts: number): DetectionResult {
+      this.timestamps.push(ts)
+      return new Promise<DetectionResult>((resolve, reject) => this.calls.push({ ts, resolve, reject })) as unknown as DetectionResult
+    }
+  }
+  const asyncSetup = () => {
+    const det = new AsyncDetector()
+    const s = setup({ createDetector: () => Promise.resolve(det as HandDetector) })
+    return { ...s, det }
+  }
+
+  it('keeps at most one frame in flight: ticks while the worker is busy are dropped', async () => {
+    const s = asyncSetup()
+    await s.session.startCamera()
+    s.frame()
+    s.frame()
+    s.frame()
+    expect(s.det.calls).toHaveLength(1)
+    s.det.calls[0].resolve(result(rawHand('Left', 0.25), rawHand('Right', 0.75)))
+    await Promise.resolve()
+    s.frame()
+    expect(s.det.calls).toHaveLength(2)
+  })
+
+  it('processes the result when it arrives, stamped with the CAPTURE time', async () => {
+    const s = asyncSetup()
+    const frames: HandFrame[] = []
+    s.session.onFrame((f) => f && frames.push(f))
+    await s.session.startCamera()
+    s.frame()
+    const capture = s.clock.t
+    s.clock.t += 120 // inference latency
+    s.det.calls[0].resolve(result(rawHand('Right', 0.75)))
+    await Promise.resolve()
+    expect(frames).toHaveLength(1)
+    expect(frames[0].timestampMs).toBe(capture)
+    expect(frames[0].right).not.toBeNull()
+  })
+
+  it('a result that arrives after stop() is ignored', async () => {
+    const s = asyncSetup()
+    const frames: (HandFrame | null)[] = []
+    s.session.onFrame((f) => frames.push(f))
+    await s.session.startCamera()
+    s.frame()
+    s.session.stop()
+    s.det.calls[0].resolve(result(rawHand('Right', 0.75)))
+    await Promise.resolve()
+    expect(frames.filter(Boolean)).toHaveLength(0)
+    expect(s.session.store.get().status).toBe('idle')
+  })
+
+  it('a rejected detection stops tracking and releases the camera', async () => {
+    const s = asyncSetup()
+    await s.session.startCamera()
+    s.frame()
+    s.det.calls[0].reject(new Error('worker crashed'))
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(s.session.store.get().status).toBe('error')
+    expect(s.stream.track.stop).toHaveBeenCalled()
+  })
+
+  it('a rejection from a detector that was replaced meanwhile is ignored', async () => {
+    const gpu = new AsyncDetector()
+    gpu.delegate = 'GPU'
+    const cpu = new FakeDetector()
+    const s = setup({ createDetector: (o) => Promise.resolve((o.delegate === 'CPU' ? cpu : gpu) as HandDetector) })
+    await s.session.startCamera()
+    s.frame() // frame 1 in flight on the GPU detector
+    ;(s.session as unknown as { detector: HandDetector }).detector = cpu // simulate the delegate swap
+    gpu.calls[0].reject(new Error('Detector closed'))
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(s.session.store.get().status).toBe('running')
   })
 })

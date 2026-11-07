@@ -64,6 +64,7 @@ export class Sequencer {
   private target: number
   private nextIdx = 0
   private elapsed = 0
+  private lateDropped = 0
 
   constructor(private score: Score, opts: Partial<SequencerOptions> = {}, initialBpm: number = score.referenceBpm) {
     this.opts = { ...DEFAULT_SEQUENCER_OPTIONS, ...opts }
@@ -85,6 +86,10 @@ export class Sequencer {
   /** Actual speed in quarter notes per minute now (conductor tempo × composer's tempo map). */
   get effectiveBpm(): number {
     return this.k.bpm * tempoRatioAt(this.score, this.k.beat)
+  }
+  /** Notes skipped because the scheduler ran too late to play them on time (the browser was too busy). */
+  get droppedLateNotes(): number {
+    return this.lateDropped
   }
   get elapsedPlayingSec(): number {
     return this.elapsed
@@ -163,7 +168,10 @@ export class Sequencer {
     while (this.nextIdx < notes.length && notes[this.nextIdx].startBeat <= horizonBeat) {
       const n = notes[this.nextIdx++]
       const at = this.locate(samples, n.startBeat)
-      if (at.late > this.opts.maxLateSec) continue // far behind (e.g. a stalled tab): skip, don't burst
+      if (at.late > this.opts.maxLateSec) {
+        this.lateDropped++ // far behind (e.g. a stalled tab): skip, don't burst
+        continue
+      }
       const bpmEff = Math.max(1, at.bpm * tempoRatioAt(this.score, n.startBeat))
       emit({
         section: n.section, midi: n.midi, velocity: n.velocity, beat: n.startBeat, ...(n.kit ? { kit: true } : {}),
@@ -185,6 +193,7 @@ export class Sequencer {
     this.k = { t: this.k.t, beat: 0, bpm: this.k.bpm }
     this.nextIdx = 0
     this.elapsed = 0
+    this.lateDropped = 0
   }
 
   private indexAtBeat(beat: number): number {

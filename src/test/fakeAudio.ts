@@ -1,6 +1,6 @@
 import type { AudioBackend } from '@/audio/backend'
 import type { ScheduledNote } from '@/audio/sequencer'
-import { SECTIONS, type SectionId } from '@/orchestra/sections'
+import type { SectionId } from '@/orchestra/sections'
 
 /** Recording fake of the Web Audio backend with a controllable clock. */
 export class FakeBackend implements AudioBackend {
@@ -64,5 +64,3 @@ export class FakeBackend implements AudioBackend {
     return this.notes.filter((n) => n.section === section)
   }
 }
-
-export const ALL_SECTIONS = SECTIONS.map((s) => s.id)

@@ -6,11 +6,14 @@ import { Library } from '@/pages/Library'
 import { Academy } from '@/pages/Academy'
 import { Analytics } from '@/pages/Analytics'
 import { NotFound } from '@/pages/NotFound'
+import { PageLoading, RouteError } from './RouteFallbacks'
 
 export const routes: RouteObject[] = [
   {
     path: '/',
     element: <Layout />,
+    HydrateFallback: PageLoading,
+    ErrorBoundary: RouteError,
     children: [
       { index: true, element: <Landing /> },
       { path: 'library', element: <Library /> },

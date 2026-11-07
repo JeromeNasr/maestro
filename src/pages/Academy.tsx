@@ -31,8 +31,8 @@ function Exercise({ lessonId, def }: { lessonId: string; def: ExerciseDef }) {
           <p className="mt-1 text-sm text-ivory-dim">{def.description}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <StatusTag kind="phase">{def.required ? 'Required' : 'Optional'}</StatusTag>
-          {def.requiresCamera && <StatusTag kind="phase">Needs camera</StatusTag>}
+          <StatusTag kind="neutral">{def.required ? 'Required' : 'Optional'}</StatusTag>
+          {def.requiresCamera && <StatusTag kind="neutral">Needs camera</StatusTag>}
         </div>
       </header>
       {r && <p className="mt-2 text-xs text-ivory-mute" data-testid={`record-${def.id}`}>{r.passed ? 'Passed' : 'Not passed yet'} · best {Math.round(r.bestScore)} · {r.attempts} attempt{r.attempts === 1 ? '' : 's'}</p>}

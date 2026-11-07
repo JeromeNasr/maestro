@@ -26,6 +26,8 @@ export interface AudioSnapshot {
   dynamicsLevel: number
   levels: Record<SectionId, number>
   backend: BackendInfo | null
+  /** Notes dropped because the scheduler was too late to play them on time (0 on a healthy machine). */
+  lateNotes: number
 }
 
 export interface EngineDeps {
@@ -69,7 +71,7 @@ export class AudioEngine {
     this.mixer = deps.mixer ?? new Mixer()
     this.store = createStore<AudioSnapshot>({
       status: 'uninitialized', error: null, transport: 'stopped', loaded: null, positionBeats: 0, bar: 1, beatInBar: 1, progress: 0,
-      elapsedSec: 0, targetBpm: null, currentBpm: null, dynamicsLevel: this.level, levels: ZERO_LEVELS(), backend: null,
+      elapsedSec: 0, targetBpm: null, currentBpm: null, dynamicsLevel: this.level, levels: ZERO_LEVELS(), backend: null, lateNotes: 0,
     })
   }
 
@@ -254,7 +256,7 @@ export class AudioEngine {
     const { bar, beat } = barAndBeat(score, pos)
     this.patch({
       positionBeats: pos, bar, beatInBar: beat, progress: Math.min(1, pos / score.totalBeats), elapsedSec: seq.elapsedPlayingSec,
-      currentBpm: seq.currentBpm, targetBpm: seq.targetBpm, levels: backend.getLevels(),
+      currentBpm: seq.currentBpm, targetBpm: seq.targetBpm, levels: backend.getLevels(), lateNotes: seq.droppedLateNotes,
     })
   }
 

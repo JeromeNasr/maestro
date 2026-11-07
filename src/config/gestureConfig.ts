@@ -1,9 +1,10 @@
 /**
  * Every tunable parameter of the conducting pipeline lives here, with defaults.
- * Phases 2–5 read from this object; a Settings UI will edit it later.
+ * The gesture engine, vision pipeline and cue detector read from this object live; the Studio's Tuning panel edits it
+ * (persisted in this browser).
  * Distances are normalised to hand size / calibrated range unless noted.
- * NOTE (Phase 1): these values are initial analytical guesses and have NOT been tuned
- * against a real webcam. They are expected to change after local testing.
+ * NOTE: these defaults were tuned against synthetic trajectories only (see src/gesture tests) and have NOT been
+ * validated with a physical webcam. Expect to adjust them after real-world testing.
  */
 export type TimeSignature = '2/4' | '3/4' | '4/4'
 

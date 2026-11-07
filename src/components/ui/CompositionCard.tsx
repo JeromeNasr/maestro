@@ -13,15 +13,15 @@ export function CompositionCard({ composition: c, selected = false, onSelect }: 
   const available = c.status === 'available'
   return (
     <article
-      className={`panel flex flex-col overflow-hidden transition-colors ${selected ? 'border-gold/70' : 'hover:border-ivory/25'} ${available ? '' : 'opacity-75'}`}
+      className={`panel flex flex-col overflow-hidden transition-colors ${selected ? 'border-gold/70' : 'hover:border-ivory/25'}`}
       aria-label={c.title}
     >
-      <div className="aspect-[16/9] border-b hairline">
+      <div className={`aspect-[16/9] border-b hairline ${available ? '' : 'opacity-60'}`}>
         <CompositionArt art={c.art} />
       </div>
       <div className="flex flex-1 flex-col p-5">
         <div className="flex flex-wrap items-center gap-2">
-          <StatusTag kind={available ? 'measured' : 'phase'}>{available ? 'Available' : 'Coming later'}</StatusTag>
+          <StatusTag kind={available ? 'measured' : 'neutral'}>{available ? 'Available' : 'Coming later'}</StatusTag>
           {available && <StatusTag kind="demo">Original · CC0</StatusTag>}
         </div>
         <h3 className="mt-3 text-2xl leading-snug">{c.title}</h3>

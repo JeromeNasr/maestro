@@ -1,7 +1,6 @@
 import type { TimeSignature } from '@/config/gestureConfig'
 import { beatsPerBar } from '@/gesture/directions'
 import type { DynamicMark } from '@/gesture/dynamicsMapper'
-import { DYNAMIC_MARKS } from '@/gesture/dynamicsMapper'
 import type { ConductingEvent, GestureSnapshot } from '@/gesture/types'
 
 /** Score 0–100 and a pass/fail, from measured behaviour only. */
@@ -196,5 +195,3 @@ export class DynamicsExercise {
     }
   }
 }
-
-export const DYNAMICS_ORDER = DYNAMIC_MARKS

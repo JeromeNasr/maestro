@@ -14,7 +14,7 @@ export const DYNAMIC_NAMES: Record<DynamicMark, string> = {
 
 /**
  * Stateless mapping from a normalised level (0 low … 1 high) to a dynamic marking using the
- * configured boundaries. (Phase 3 adds the stateful mapper with hysteresis and crescendo detection.)
+ * configured boundaries. (The stateful version, with hysteresis and crescendo detection, is DynamicsTracker.)
  */
 export function markForLevel(
   level: number,

@@ -7,7 +7,7 @@ export default {
         ink: { 950: '#0b0a09', 900: '#12100e', 800: '#1a1714', 700: '#252019', 600: '#342d24' },
         ivory: { DEFAULT: '#f3ecdc', dim: '#c9c0ad', mute: '#8f8878' },
         gold: { DEFAULT: '#c4a35a', soft: '#d9bf82', deep: '#8f7436' },
-        bronze: { DEFAULT: '#8c6a43', deep: '#5b4328' },
+        bronze: { DEFAULT: '#8c6a43', deep: '#5b4328', soft: '#c0a073' },
       },
       fontFamily: {
         serif: ['"Cormorant Garamond"', 'Georgia', '"Times New Roman"', 'serif'],

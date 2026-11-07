@@ -1,6 +1,7 @@
 import type { HandLandmarker } from '@mediapipe/tasks-vision'
 import { resolveAssets, type AssetLocation } from './assetLoader'
 import type { DetectorFactory, DetectorOptions, HandDetector } from './detector'
+import { WorkerHandDetector, withFallback } from './workerDetector'
 import type { DetectionResult, ReportedLabel } from './types'
 
 /** Real detector backed by MediaPipe Hand Landmarker. Loaded lazily so the library stays out of the initial bundle. */
@@ -53,4 +54,8 @@ export class MediaPipeHandDetector implements HandDetector {
   }
 }
 
-export const createMediaPipeDetector: DetectorFactory = (o) => MediaPipeHandDetector.create(o)
+/** Main-thread detector (used when a worker is unavailable). */
+export const createMainThreadDetector: DetectorFactory = (o) => MediaPipeHandDetector.create(o)
+
+/** The app's detector: a Web Worker (keeps the UI and audio responsive), falling back to the main thread. */
+export const createMediaPipeDetector: DetectorFactory = withFallback((o) => WorkerHandDetector.create(o), createMainThreadDetector)

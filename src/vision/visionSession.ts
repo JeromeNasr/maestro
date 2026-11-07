@@ -9,7 +9,7 @@ import type { DetectorFactory, HandDetector } from './detector'
 import { clamp } from './geometry'
 import { HandPipeline } from './handPipeline'
 import { effectiveHandedness, type HandednessResolution } from './handedness'
-import type { FrameSource, HandFrame, SideTracking } from './types'
+import type { DetectionResult, FrameSource, HandFrame, SideTracking } from './types'
 
 export type VisionStatus = 'idle' | 'requesting-permission' | 'loading-model' | 'running' | 'paused' | 'error'
 
@@ -59,6 +59,9 @@ const UI_INTERVAL_MS = 100
 /** If the GPU delegate averages slower than this per frame (software GL, weak iGPU), switch once to the CPU delegate. */
 export const SLOW_GPU_MS = 80
 const SLOW_GPU_MIN_SAMPLES = 15
+/** A drastically slow delegate (software GL can take seconds per frame) is replaced after just a few frames. */
+const VERY_SLOW_MS = 400
+const VERY_SLOW_MIN_SAMPLES = 3
 
 /** The detector's minimum confidence implied by the user's sensitivity slider (higher sensitivity → lower threshold). */
 export const effectiveMinConfidence = (cfg: GestureConfig) => clamp(cfg.tracking.minDetectionConfidence / cfg.tracking.sensitivity, 0.2, 0.95)
@@ -93,6 +96,7 @@ export class VisionSession {
   private inferenceMs = 0
   private lastUi = 0
   private inferenceSamples = 0
+  private inflight = false
   private delegateSwitchTried = false
   private unsubSettings: (() => void) | null = null
   private visibilityHandler: (() => void) | null = null
@@ -291,27 +295,53 @@ export class VisionSession {
 
   private runFrame() {
     const now = this.now()
-    let result
-    let inference = 0
     const source = this.store.get().source!
     if (source === 'camera') {
       const v = this.video
-      if (!v || !this.detector || v.readyState < 2 || v.currentTime === this.lastVideoTime) return // no new frame yet
+      const d = this.detector
+      // One frame in flight at a time: while the worker is busy, further ticks are dropped (the UI never waits for it).
+      if (this.inflight || !v || !d || v.readyState < 2 || v.currentTime === this.lastVideoTime) return
       this.lastVideoTime = v.currentTime
       const ts = Math.max(now, this.lastTs + 1) // MediaPipe requires strictly increasing timestamps
       this.lastTs = ts
-      try {
-        result = this.detector.detect(v, ts)
-      } catch {
+      const fail = () => {
         this.teardown()
         this.fail({ kind: 'unknown', title: 'Hand tracking stopped', message: 'The hand-tracking model reported an error and was stopped. Press Enable camera to try again.', canRetry: true })
+      }
+      let res: DetectionResult | Promise<DetectionResult>
+      try {
+        res = d.detect(v, ts)
+      } catch {
+        fail()
         return
       }
-      inference = this.now() - now
-    } else {
-      result = this.demo!.detect(now - this.demoStart)
+      if (res instanceof Promise) {
+        this.inflight = true
+        const gen = this.gen
+        res.then(
+          (r) => {
+            this.inflight = false
+            // Ignore results that arrive after a stop / restart / detector swap. The frame keeps its CAPTURE time, so
+            // velocities are not distorted by inference latency.
+            if (gen !== this.gen || this.detector !== d || this.store.get().status !== 'running') return
+            this.finishFrame(r, now, this.now() - now, 'camera')
+          },
+          () => {
+            this.inflight = false
+            if (gen !== this.gen || this.detector !== d || this.store.get().status !== 'running') return
+            fail()
+          },
+        )
+        return
+      }
+      this.finishFrame(res, now, this.now() - now, 'camera')
+      return
     }
+    this.finishFrame(this.demo!.detect(now - this.demoStart), now, 0, 'demo')
+  }
 
+  /** Everything after detection: pipeline, calibration, listeners, measured rates, throttled UI update. */
+  private finishFrame(result: DetectionResult, now: number, inference: number, source: FrameSource) {
     const frame = this.pipeline.process(result, now, source)
 
     // Calibration consumes the same frames.
@@ -348,7 +378,10 @@ export class VisionSession {
   /** One-shot: a persistently slow GPU delegate is replaced by the CPU delegate. Keeps running meanwhile. */
   private maybeDowngradeDelegate() {
     const d = this.detector
-    if (!d || d.delegate !== 'GPU' || this.delegateSwitchTried || this.inferenceSamples < SLOW_GPU_MIN_SAMPLES || this.inferenceMs <= SLOW_GPU_MS) return
+    if (!d || d.delegate !== 'GPU' || this.delegateSwitchTried) return
+    const slow = this.inferenceSamples >= SLOW_GPU_MIN_SAMPLES && this.inferenceMs > SLOW_GPU_MS
+    const verySlow = this.inferenceSamples >= VERY_SLOW_MIN_SAMPLES && this.inferenceMs > VERY_SLOW_MS
+    if (!slow && !verySlow) return
     this.delegateSwitchTried = true
     const gen = this.gen
     this.deps
@@ -401,6 +434,7 @@ export class VisionSession {
     this.rafId = null
     if (this.visibilityHandler) this.doc?.removeEventListener('visibilitychange', this.visibilityHandler)
     this.visibilityHandler = null
+    this.inflight = false
     this.camera.stop()
     this.detector?.close()
     this.detector = null
