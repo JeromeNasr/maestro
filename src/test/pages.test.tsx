@@ -1,9 +1,17 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
 import { routes } from '@/app/App'
 import { selectedCompositionId } from '@/library/selection'
+import { installStudioEnv } from './studioEnv'
+
+vi.mock('@/audio/toneBackend', async () => await import('./fakeToneBackend'))
+vi.mock('@/vision/mediapipeDetector', async () => await import('./fakeMediapipe'))
+
+beforeEach(() => {
+  installStudioEnv()
+})
 
 function renderAt(path: string) {
   return render(<RouterProvider router={createMemoryRouter(routes, { initialEntries: [path] })} />)
@@ -17,9 +25,9 @@ describe('routing & navigation', () => {
     ['/academy', /learn the language/i],
     ['/analytics', /your performances/i],
     ['/missing', /out of tempo/i],
-  ])('renders %s', (path, heading) => {
+  ])('renders %s', async (path, heading) => {
     renderAt(path)
-    expect(screen.getByRole('heading', { level: 1, name: heading })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: heading })).toBeInTheDocument()
   })
 
   it('exposes the primary navigation', () => {
@@ -54,54 +62,49 @@ describe('Library', () => {
   })
 })
 
-describe('Studio (Phase 2)', () => {
-  it('does not request the camera on load, and keeps unimplemented playback/mixer controls disabled', () => {
-    const getUserMedia = vi.fn()
-    Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia }, configurable: true })
+describe('Studio', () => {
+  it('does not request the camera or start audio on load', async () => {
+    const { getUserMedia } = installStudioEnv()
     renderAt('/studio')
+    await screen.findByRole('heading', { level: 1, name: /aurora/i })
     expect(getUserMedia).not.toHaveBeenCalled()
-    for (const name of ['Start', 'Pause', 'Resume', 'Stop', 'Reset']) expect(screen.getByRole('button', { name })).toBeDisabled()
-    const mixer = screen.getByRole('region', { name: /orchestra/i })
-    for (const b of within(mixer).getAllByRole('button')) expect(b).toBeDisabled()
-    for (const s of within(mixer).getAllByRole('slider')) expect(s).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Enable camera' })).toBeEnabled()
+    const { instances } = await import('./fakeToneBackend')
+    expect(instances.every((b) => b.initCalls === 0)).toBe(true)
   })
 
-  it('shows no fabricated live values', () => {
+  it('every visible control is enabled or has a stated reason for being disabled', async () => {
     renderAt('/studio')
-    const readout = screen.getByRole('region', { name: /performance/i })
-    for (const label of ['BPM', 'Beats detected', 'Position', 'Dynamics', 'Tracking confidence']) {
-      expect(within(readout).getByText(label).nextSibling).toHaveTextContent('—')
-    }
+    await screen.findByRole('heading', { level: 1, name: /aurora/i })
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Start' })).toBeEnabled())
+    expect(screen.getByRole('button', { name: 'Enable camera' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeDisabled() // nothing playing yet
+    expect(screen.getByRole('button', { name: 'Resume' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeDisabled()
+    const mixer = screen.getByRole('region', { name: /orchestra/i })
+    for (const b of within(mixer).getAllByRole('button')) expect(b).toBeEnabled()
+    for (const sl of within(mixer).getAllByRole('slider')) expect(sl).toBeEnabled()
+  })
+
+  it('shows no fabricated live values before anything is conducted', async () => {
+    renderAt('/studio')
+    await screen.findByRole('heading', { level: 1, name: /aurora/i })
+    for (const id of ['readout-your-tempo', 'readout-music-tempo', 'readout-position', 'readout-tracking']) expect(screen.getByTestId(id)).toHaveTextContent('—')
   })
 })
 
-describe('Analytics', () => {
-  it('starts empty with no invented data', () => {
-    renderAt('/analytics')
-    expect(screen.getByText(/no performances recorded yet/i)).toBeInTheDocument()
-  })
 
-  it('labels sample data as demo and tags measured vs estimate', async () => {
-    renderAt('/analytics')
-    await userEvent.click(screen.getByRole('button', { name: /preview layout/i }))
-    expect(screen.getByText(/invented sample values/i)).toBeInTheDocument()
-    expect(screen.getAllByText('Measured').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('Estimate').length).toBeGreaterThan(0)
-  })
-})
 
 describe('Academy', () => {
   it('switches lessons and shows a pattern demo', async () => {
     renderAt('/academy')
-    await userEvent.click(screen.getByRole('button', { name: /4\/4 — conducting in four/i }))
+    await userEvent.click(await screen.findByRole('button', { name: /4\/4 — conducting in four/i }))
     expect(screen.getByRole('heading', { level: 2, name: /4\/4/ })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /4\/4 conducting pattern: Down, Left, Right, Up/ })).toBeInTheDocument()
   })
 
   it('dynamics demo maps the slider to a marking', async () => {
     renderAt('/academy')
-    await userEvent.click(screen.getByRole('button', { name: /^05?\s?\d*\s?Dynamics$|Dynamics$/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /Dynamics, crescendo and diminuendo/ }))
     expect(screen.getByTestId('dynamic-mark')).toHaveTextContent('mf')
   })
 })

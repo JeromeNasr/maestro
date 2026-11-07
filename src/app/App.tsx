@@ -3,7 +3,6 @@ import { RouterProvider } from 'react-router/dom'
 import { Layout } from './Layout'
 import { Landing } from '@/pages/Landing'
 import { Library } from '@/pages/Library'
-import { Studio } from '@/pages/Studio'
 import { Academy } from '@/pages/Academy'
 import { Analytics } from '@/pages/Analytics'
 import { NotFound } from '@/pages/NotFound'
@@ -15,7 +14,7 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <Landing /> },
       { path: 'library', element: <Library /> },
-      { path: 'studio', element: <Studio /> },
+      { path: 'studio', lazy: async () => ({ Component: (await import('@/pages/Studio')).Studio }) },
       { path: 'academy', element: <Academy /> },
       { path: 'analytics', element: <Analytics /> },
       { path: '*', element: <NotFound /> },

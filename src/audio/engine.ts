@@ -33,6 +33,8 @@ export interface EngineDeps {
   setInterval?: (cb: () => void, ms: number) => unknown
   clearInterval?: (h: unknown) => void
   sequencer?: Partial<SequencerOptions>
+  /** Supply a long-lived mixer (so its state survives engine re-creation). */
+  mixer?: Mixer
   tickMs?: number
 }
 
@@ -48,12 +50,14 @@ const RESUME_GATE_DELAY_S = 0.08
  */
 export class AudioEngine {
   readonly store: Store<AudioSnapshot>
-  readonly mixer = new Mixer()
+  readonly mixer: Mixer
 
   private backend: AudioBackend | null = null
   private seq: Sequencer | null = null
   private score: Score | null = null
   private timer: unknown = null
+  /** Runs while paused so the meters fall to zero instead of freezing at their last reading. */
+  private meterTimer: unknown = null
   private lastUi = -Infinity
   private level = 0.58
   private unsubMixer: (() => void) | null = null
@@ -62,6 +66,7 @@ export class AudioEngine {
   private listeners = { finished: new Set<() => void>() }
 
   constructor(private deps: EngineDeps) {
+    this.mixer = deps.mixer ?? new Mixer()
     this.store = createStore<AudioSnapshot>({
       status: 'uninitialized', error: null, transport: 'stopped', loaded: null, positionBeats: 0, bar: 1, beatInBar: 1, progress: 0,
       elapsedSec: 0, targetBpm: null, currentBpm: null, dynamicsLevel: this.level, levels: ZERO_LEVELS(), backend: null,
@@ -117,6 +122,7 @@ export class AudioEngine {
     if (this.disposed) return
     this.disposed = true
     this.stopTimer()
+    this.stopMeterDecay()
     this.unsubMixer?.()
     this.unsubMixer = null
     this.backend?.silence()
@@ -160,12 +166,14 @@ export class AudioEngine {
     this.stopTimer()
     this.refresh(true)
     this.patch({ transport: 'paused' })
+    this.startMeterDecay()
   }
 
   resume(): boolean {
     if (!this.backend || !this.seq || this.seq.state !== 'paused') return false
     const now = this.backend.currentTime
     // Notes queued just before the pause have long since sounded or been cancelled; re-open the gate a moment after.
+    this.stopMeterDecay()
     this.backend.unsilence(now + RESUME_GATE_DELAY_S)
     this.seq.play(now)
     this.patch({ transport: 'playing' })
@@ -176,6 +184,7 @@ export class AudioEngine {
   /** Immediate stop: silence, rewind to the start. Safe at any time. */
   stop() {
     this.stopTimer()
+    this.stopMeterDecay()
     this.backend?.silence()
     this.seq?.stop()
     this.patch({ transport: 'stopped', positionBeats: 0, bar: 1, beatInBar: 1, progress: 0, elapsedSec: 0, levels: ZERO_LEVELS() })
@@ -264,6 +273,22 @@ export class AudioEngine {
     const si = this.deps.setInterval ?? ((cb: () => void, ms: number) => setInterval(cb, ms))
     this.timer = si(() => this.tick(), this.deps.tickMs ?? 25)
   }
+  /** While paused, keep publishing the (decaying) real output levels until every section is quiet. */
+  private startMeterDecay() {
+    if (this.meterTimer !== null) return
+    const si = this.deps.setInterval ?? ((cb: () => void, ms: number) => setInterval(cb, ms))
+    this.meterTimer = si(() => {
+      this.refresh(true)
+      if (Object.values(this.snapshot.levels).every((v) => v < 0.01)) this.stopMeterDecay()
+    }, 100)
+  }
+  private stopMeterDecay() {
+    if (this.meterTimer === null) return
+    const ci = this.deps.clearInterval ?? ((h: unknown) => clearInterval(h as ReturnType<typeof setInterval>))
+    ci(this.meterTimer)
+    this.meterTimer = null
+  }
+
   private stopTimer() {
     if (this.timer === null) return
     const ci = this.deps.clearInterval ?? ((h: unknown) => clearInterval(h as ReturnType<typeof setInterval>))

@@ -109,6 +109,12 @@ describe('AudioEngine — transport', () => {
     expect(engine.snapshot.transport).toBe('paused')
     expect(backend.silenced).toBe(true)
     expect(intervals[0].cleared).toBe(true) // scheduler timer stopped
+    expect(intervals).toHaveLength(2) // …and a meter-decay timer runs so the meters fall to zero instead of freezing
+    expect(intervals[1].cleared).toBe(false)
+    backend.meter = { strings: 0, woodwinds: 0, brass: 0, percussion: 0 }
+    intervals[1].cb()
+    expect(engine.snapshot.levels.strings).toBe(0)
+    expect(intervals[1].cleared).toBe(true) // stops once everything is quiet
     const notesBefore = backend.notes.length
     advance(2)
     expect(backend.notes.length).toBe(notesBefore) // nothing scheduled while paused
@@ -247,7 +253,7 @@ describe('AudioEngine — dynamics', () => {
     engine.play()
     advance(2)
     const loud = backend.notes.slice(0, 4).map((n) => n.velocity)
-    soft.forEach((v, i) => expect(loud[i]).toBeGreaterThan(v * 1.5))
+    soft.forEach((v, i) => expect(loud[i]).toBeGreaterThan(v * 1.4))
     expect(Math.max(...loud)).toBeLessThanOrEqual(1)
   })
 

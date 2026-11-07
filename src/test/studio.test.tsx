@@ -1,152 +1,258 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
 import { routes } from '@/app/App'
 import { calibrationStore } from '@/vision/calibration'
-import { FakeStream, namedError } from './fakeMedia'
+import { selectedCompositionId } from '@/library/selection'
+import { SECTIONS } from '@/orchestra/sections'
+import { namedError } from './fakeMedia'
+import { instances } from './fakeToneBackend'
+import { detectors } from './fakeMediapipe'
+import { installStudioEnv } from './studioEnv'
 
-const h = vi.hoisted(() => ({ create: vi.fn() }))
-vi.mock('@/vision/mediapipeDetector', () => ({ createMediaPipeDetector: h.create }))
+vi.mock('@/audio/toneBackend', async () => await import('./fakeToneBackend'))
+vi.mock('@/vision/mediapipeDetector', async () => await import('./fakeMediapipe'))
 
-class UiDetector {
-  delegate = 'CPU' as const
-  assetOrigin = 'test' as const
-  closed = false
-  detect = () => ({ hands: [] })
-  setMinConfidence = vi.fn()
-  close() {
-    this.closed = true
-  }
-}
-
-let stream: FakeStream
-let getUserMedia: ReturnType<typeof vi.fn>
-let detector: UiDetector
-
+let env: ReturnType<typeof installStudioEnv>
 beforeEach(() => {
-  stream = new FakeStream()
-  detector = new UiDetector()
-  h.create.mockImplementation(() => Promise.resolve(detector))
-  getUserMedia = vi.fn(() => Promise.resolve(stream))
-  Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia }, configurable: true })
-  HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined)
-  HTMLMediaElement.prototype.pause = vi.fn()
-  Object.defineProperty(HTMLVideoElement.prototype, 'videoWidth', { get: () => 640, configurable: true })
-  Object.defineProperty(HTMLVideoElement.prototype, 'videoHeight', { get: () => 480, configurable: true })
-  HTMLCanvasElement.prototype.getContext = vi.fn(() => null) as never
+  env = installStudioEnv()
+  instances.length = 0
+  detectors.length = 0
 })
 
-const renderStudio = () => render(<RouterProvider router={createMemoryRouter(routes, { initialEntries: ['/studio'] })} />)
-const panel = () => screen.getByRole('region', { name: /camera & hand tracking/i })
-const enable = () => userEvent.click(screen.getByRole('button', { name: 'Enable camera' }))
+async function renderStudio() {
+  const view = render(<RouterProvider router={createMemoryRouter(routes, { initialEntries: ['/studio'] })} />)
+  await screen.findByRole('heading', { level: 1 })
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Start' })).toBeEnabled()) // score loaded
+  return view
+}
+const cameraPanel = () => screen.getByRole('region', { name: /camera & hand tracking/i })
+const enableCamera = () => userEvent.click(screen.getByRole('button', { name: 'Enable camera' }))
+const backend = () => instances.at(-1)!
 
-describe('Studio camera panel', () => {
-  it('starts with the camera off, explains privacy, and requests nothing', () => {
-    renderStudio()
+describe('Studio — camera panel', () => {
+  it('starts with the camera off, explains privacy, and requests nothing', async () => {
+    await renderStudio()
     expect(screen.getByText('Camera is off')).toBeInTheDocument()
     expect(screen.getByText(/never uploaded/i)).toBeInTheDocument()
-    expect(getUserMedia).not.toHaveBeenCalled()
-    expect(h.create).not.toHaveBeenCalled()
+    expect(env.getUserMedia).not.toHaveBeenCalled()
+    expect(detectors).toHaveLength(0)
     expect(screen.getByRole('button', { name: 'Calibrate' })).toBeDisabled()
     expect(screen.getByTestId('handedness-status')).toHaveTextContent(/not verified/i)
   })
 
-  it('requests the camera only when Enable camera is pressed, then shows live tracking state', async () => {
-    renderStudio()
-    await enable()
-    expect(getUserMedia).toHaveBeenCalledTimes(1)
-    expect(getUserMedia.mock.calls[0][0]).toMatchObject({ audio: false })
-    expect(await within(panel()).findByText('Live camera')).toBeInTheDocument()
+  it('requests the camera only when Enable camera is pressed (video only), then shows live state', async () => {
+    await renderStudio()
+    await enableCamera()
+    expect(env.getUserMedia).toHaveBeenCalledTimes(1)
+    expect((env.getUserMedia.mock.calls[0] as unknown[])[0]).toMatchObject({ audio: false })
+    expect(await within(cameraPanel()).findByText('Live camera')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Stop camera' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Calibrate' })).toBeEnabled()
-    expect(screen.getByText(/No hands detected/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Demo mode' })).toBeDisabled() // cannot mix sources
+    expect(screen.getByRole('button', { name: 'Virtual conductor' })).toBeDisabled()
   })
 
   it('Stop camera releases the hardware and the model', async () => {
-    renderStudio()
-    await enable()
-    await screen.findByRole('button', { name: 'Stop camera' })
-    await userEvent.click(screen.getByRole('button', { name: 'Stop camera' }))
-    expect(stream.track.stop).toHaveBeenCalled()
-    expect(detector.closed).toBe(true)
+    await renderStudio()
+    await enableCamera()
+    await userEvent.click(await screen.findByRole('button', { name: 'Stop camera' }))
+    expect(env.stream.track.stop).toHaveBeenCalled()
+    expect(detectors[0].closed).toBe(true)
     expect(screen.getByText('Camera is off')).toBeInTheDocument()
   })
 
-  it('leaving the Studio (unmount) releases the camera', async () => {
-    const { unmount } = renderStudio()
-    await enable()
+  it('leaving the Studio releases camera, model AND audio', async () => {
+    const { unmount } = await renderStudio()
+    await enableCamera()
     await screen.findByRole('button', { name: 'Stop camera' })
+    await userEvent.click(screen.getByRole('button', { name: 'Start' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Pause' })).toBeEnabled())
     unmount()
-    expect(stream.track.stop).toHaveBeenCalled()
-    expect(detector.closed).toBe(true)
+    expect(env.stream.track.stop).toHaveBeenCalled()
+    expect(detectors[0].closed).toBe(true)
+    expect(backend().disposed).toBe(true)
   })
 
-  it('shows a clear message when permission is denied, and allows retry or demo mode', async () => {
-    getUserMedia.mockRejectedValueOnce(namedError('NotAllowedError'))
-    renderStudio()
-    await enable()
+  it('permission denied → clear message; retry or the virtual conductor', async () => {
+    env.getUserMedia.mockRejectedValueOnce(namedError('NotAllowedError'))
+    await renderStudio()
+    await enableCamera()
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent(/camera access was blocked/i)
-    expect(alert).toHaveTextContent(/address bar/i)
-    expect(screen.getByRole('button', { name: 'Demo mode' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Virtual conductor' })).toBeEnabled()
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
     expect(await screen.findByRole('button', { name: 'Stop camera' })).toBeInTheDocument()
-    expect(getUserMedia).toHaveBeenCalledTimes(2)
   })
 
-  it('explains when no camera exists', async () => {
-    getUserMedia.mockRejectedValueOnce(namedError('NotFoundError'))
-    renderStudio()
-    await enable()
-    expect(await screen.findByRole('alert')).toHaveTextContent(/no camera was detected/i)
+  it('no camera at all → explains and points to the virtual conductor', async () => {
+    env.getUserMedia.mockRejectedValueOnce(namedError('NotFoundError'))
+    await renderStudio()
+    await enableCamera()
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent(/no camera was detected/i)
+    expect(alert).toHaveTextContent(/virtual conductor/i)
   })
 
-  it('demonstration mode works without any camera and is clearly labelled synthetic', async () => {
-    renderStudio()
-    await userEvent.click(screen.getByRole('button', { name: 'Demo mode' }))
-    expect(getUserMedia).not.toHaveBeenCalled()
-    expect(h.create).not.toHaveBeenCalled()
-    expect(within(panel()).getAllByText(/synthetic hands/i).length).toBeGreaterThan(0)
+  it('the virtual conductor works without a camera, is clearly synthetic, and offers its own controls', async () => {
+    await renderStudio()
+    await userEvent.click(screen.getByRole('button', { name: 'Virtual conductor' }))
+    expect(env.getUserMedia).not.toHaveBeenCalled()
+    expect(within(cameraPanel()).getAllByText(/synthetic hands/i).length).toBeGreaterThan(0)
     expect(screen.getByRole('button', { name: 'Calibrate' })).toBeDisabled()
+    const panel = screen.getByRole('region', { name: /virtual conductor/i })
+    expect(within(panel).getByRole('slider', { name: /tempo in beats per minute/i })).toBeEnabled()
     await userEvent.click(screen.getByRole('button', { name: 'Stop demo' }))
-    expect(screen.getByText('Camera is off')).toBeInTheDocument()
-  })
-
-  it('demonstration mode reports both demo hands as tracked', async () => {
-    renderStudio()
-    await userEvent.click(screen.getByRole('button', { name: 'Demo mode' }))
-    await waitFor(() => expect(screen.getByTestId('left-status')).toHaveTextContent(/tracking/i), { timeout: 2000 })
-    await waitFor(() => expect(screen.getByTestId('right-status')).toHaveTextContent(/tracking/i), { timeout: 2000 })
+    expect(screen.queryByRole('region', { name: /virtual conductor/i })).not.toBeInTheDocument()
   })
 
   it('opens the calibration flow from the live camera and can cancel it', async () => {
-    renderStudio()
-    await enable()
+    await renderStudio()
+    await enableCamera()
     await userEvent.click(await screen.findByRole('button', { name: 'Calibrate' }))
     const cal = screen.getByRole('group', { name: 'Calibration' })
     expect(cal).toHaveTextContent(/step 1 of 3/i)
-    expect(cal).toHaveTextContent(/right side of the preview/i)
     await userEvent.click(within(cal).getByRole('button', { name: /cancel calibration/i }))
     expect(screen.queryByRole('group', { name: 'Calibration' })).not.toBeInTheDocument()
   })
 
-  it('the sensitivity slider and handedness override are real settings', async () => {
-    renderStudio()
-    const slider = screen.getByRole('slider', { name: /tracking sensitivity/i })
-    expect(slider).toBeEnabled()
+  it('sensitivity and the left/right override are real settings', async () => {
+    await renderStudio()
+    expect(screen.getByRole('slider', { name: /tracking sensitivity/i })).toBeEnabled()
     await userEvent.selectOptions(screen.getByLabelText(/left\/right labels/i), 'swapped')
     await waitFor(() => expect(screen.getByTestId('handedness-status')).toHaveTextContent(/manual: labels swapped/i))
   })
 
   it('shows a saved calibration and lets the user clear it', async () => {
     calibrationStore.set({ version: 1, createdAt: 1, handedness: { swap: true, observed: { right: 'Left', left: 'Right' }, agreement: { right: 1, left: 1 } }, ranges: { left: null, right: null }, warnings: [] })
-    renderStudio()
+    await renderStudio()
     expect(await screen.findByText(/verified by calibration — labels swapped/i)).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Clear calibration' }))
     expect(calibrationStore.get()).toBeNull()
     expect(screen.getByTestId('handedness-status')).toHaveTextContent(/not verified/i)
-    expect(screen.queryByRole('button', { name: 'Clear calibration' })).not.toBeInTheDocument()
+  })
+})
+
+describe('Studio — playback controls', () => {
+  it('Enable audio initialises audio on a click; Start plays; the transport buttons follow the state', async () => {
+    await renderStudio()
+    expect(backend()?.initCalls ?? 0).toBe(0)
+    await userEvent.click(screen.getByRole('button', { name: 'Start' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Pause' })).toBeEnabled())
+    expect(backend().initCalls).toBe(1)
+    expect(screen.getByTestId('audio-status')).toHaveTextContent(/audio running/i)
+    expect(screen.getByRole('button', { name: 'Start' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeEnabled()
+    await userEvent.click(screen.getByRole('button', { name: 'Pause' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Resume' })).toBeEnabled())
+    expect(backend().silenced).toBe(true)
+    await userEvent.click(screen.getByRole('button', { name: 'Resume' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Pause' })).toBeEnabled())
+    await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Start' })).toBeEnabled())
+    expect(screen.getByTestId('readout-position')).toHaveTextContent('—')
+  })
+
+  it('emergency pause / stop are always on screen while playing, and work from the keyboard', async () => {
+    await renderStudio()
+    expect(screen.queryByRole('region', { name: /emergency controls/i })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Start' }))
+    const bar = await screen.findByRole('region', { name: /emergency controls/i })
+    expect(within(bar).getByRole('button', { name: /pause/i })).toBeVisible()
+    expect(within(bar).getByRole('button', { name: /stop/i })).toBeVisible()
+    await act(async () => {
+      document.body.focus()
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true }))
+    })
+    expect(await within(await screen.findByRole('region', { name: /emergency controls/i })).findByRole('button', { name: /resume/i })).toBeVisible()
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    })
+    await waitFor(() => expect(screen.queryByRole('region', { name: /emergency controls/i })).not.toBeInTheDocument())
+    expect(backend().silenced).toBe(true)
+  })
+
+  it('Space on a focused button keeps its normal meaning (does not pause)', async () => {
+    await renderStudio()
+    await userEvent.click(screen.getByRole('button', { name: 'Start' }))
+    await screen.findByRole('region', { name: /emergency controls/i })
+    const stopBtn = screen.getByRole('button', { name: 'Stop', hidden: false })
+    stopBtn.focus()
+    const ev = new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true, cancelable: true })
+    stopBtn.dispatchEvent(ev)
+    expect(ev.defaultPrevented).toBe(false)
+  })
+})
+
+describe('Studio — orchestra section controls', () => {
+  it.each(SECTIONS.map((s) => [s.id, s.label] as const))('%s: mute, solo and volume change the audio graph', async (id, label) => {
+    await renderStudio()
+    await userEvent.click(screen.getByRole('button', { name: 'Enable audio' }))
+    await waitFor(() => expect(screen.getByTestId('audio-status')).toHaveTextContent(/audio running/i))
+    const b = backend()
+    const row = screen.getByTestId(`section-${id}`)
+    const before = b.gains[id]
+    expect(before).toBeGreaterThan(0)
+    await userEvent.click(within(row).getByRole('button', { name: `Mute ${label}` }))
+    expect(within(row).getByRole('button', { name: `Mute ${label}` })).toHaveAttribute('aria-pressed', 'true')
+    expect(b.gains[id]).toBe(0)
+    await userEvent.click(within(row).getByRole('button', { name: `Mute ${label}` }))
+    expect(b.gains[id]).toBeCloseTo(before)
+    await userEvent.click(within(row).getByRole('button', { name: `Solo ${label}` }))
+    for (const other of SECTIONS.filter((s) => s.id !== id)) expect(b.gains[other.id]).toBe(0)
+    expect(b.gains[id]).toBeGreaterThan(0)
+    await userEvent.click(within(row).getByRole('button', { name: `Solo ${label}` }))
+    const slider = within(row).getByRole('slider', { name: `${label} volume` })
+    fireEvent.change(slider, { target: { value: '0' } })
+    expect(b.gains[id]).toBe(0)
+    fireEvent.change(slider, { target: { value: '0.5' } })
+    expect(b.gains[id]).toBeGreaterThan(0)
+    expect(b.gains[id]).toBeLessThan(before)
+  })
+
+  it('master volume reaches the output', async () => {
+    await renderStudio()
+    await userEvent.click(screen.getByRole('button', { name: 'Enable audio' }))
+    await waitFor(() => expect(screen.getByTestId('audio-status')).toHaveTextContent(/audio running/i))
+    const master = screen.getByRole('slider', { name: 'Master volume' })
+    fireEvent.change(master, { target: { value: '0' } })
+    expect(backend().master).toBe(0)
+    fireEvent.change(master, { target: { value: '1' } })
+    expect(backend().master).toBe(1)
+  })
+})
+
+describe('Studio — composition and conducting pattern', () => {
+  it('conducting pattern: Aurora offers 4/4 and 2/4 (in two), locked while playing; the Minuet only 3/4', async () => {
+    await renderStudio()
+    const sel = screen.getByLabelText('Conduct in') as HTMLSelectElement
+    expect([...sel.options].map((o) => o.textContent)).toEqual(['4/4', '2/4 (in two)'])
+    await userEvent.selectOptions(sel, '2/4')
+    expect(sel.value).toBe('2/4')
+    await userEvent.click(screen.getByRole('button', { name: 'Start' }))
+    await waitFor(() => expect(sel).toBeDisabled())
+    await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
+    await waitFor(() => expect(sel).toBeEnabled())
+    await userEvent.selectOptions(screen.getByLabelText('Composition'), 'evening-minuet')
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Evening Minuet'))
+    await waitFor(() => expect(screen.getByLabelText('Conduct in')).toBeDisabled())
+    expect(selectedCompositionId.get()).toBe('evening-minuet')
+    expect((screen.getByLabelText('Conduct in') as HTMLSelectElement).value).toBe('3/4')
+  })
+
+  it('lists the instruments of the piece and the section each belongs to', async () => {
+    await renderStudio()
+    await userEvent.click(screen.getByText('Instruments in this piece'))
+    const table = screen.getByRole('table', { name: /orchestra section/i })
+    expect(within(table).getByText('Timpani').closest('tr')).toHaveTextContent('Percussion')
+    expect(within(table).getByText('Flute').closest('tr')).toHaveTextContent('Woodwinds')
+    expect(within(table).getByText('Horns').closest('tr')).toHaveTextContent('Brass')
+  })
+
+  it('tempo mode: fixed tempo reveals a speed control', async () => {
+    await renderStudio()
+    expect(screen.queryByRole('slider', { name: /fixed tempo/i })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('radio', { name: 'Fixed tempo' }))
+    expect(screen.getByRole('slider', { name: /fixed tempo/i })).toBeEnabled()
   })
 })

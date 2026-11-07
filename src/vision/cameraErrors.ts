@@ -26,7 +26,7 @@ const INFO: Record<CameraErrorKind, Omit<CameraErrorInfo, 'kind'>> = {
   },
   'no-device': {
     title: 'No camera found',
-    message: `No camera was detected on this device. Connect a webcam and try again, or use demonstration mode. ${PRIVACY}`,
+    message: `No camera was detected on this device. Connect a webcam and try again, or use the virtual conductor (no camera needed). ${PRIVACY}`,
     canRetry: true,
   },
   'in-use': {
@@ -46,13 +46,13 @@ const INFO: Record<CameraErrorKind, Omit<CameraErrorInfo, 'kind'>> = {
   },
   unsupported: {
     title: 'Camera not supported',
-    message: 'This browser does not support camera access (getUserMedia). Try a current version of Chrome, Edge, Firefox or Safari, or use demonstration mode.',
+    message: 'This browser does not support camera access (getUserMedia). Try a current version of Chrome, Edge, Firefox or Safari, or use the virtual conductor (no camera needed).',
     canRetry: false,
   },
   aborted: { title: 'Camera start was interrupted', message: 'The camera request was cancelled before it finished.', canRetry: true },
   unknown: {
     title: 'The camera could not be started',
-    message: 'An unexpected error occurred while starting the camera. Try again, or use demonstration mode.',
+    message: 'An unexpected error occurred while starting the camera. Try again, or use the virtual conductor (no camera needed).',
     canRetry: true,
   },
 }

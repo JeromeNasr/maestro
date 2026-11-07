@@ -28,7 +28,7 @@ describe('classifyCameraError', () => {
     expect(denied.message).toMatch(/address bar/i)
     expect(denied.message).toMatch(/nothing was recorded or sent/i)
     expect(denied.canRetry).toBe(true)
-    expect(classifyCameraError(named('NotFoundError')).message).toMatch(/demonstration mode/i)
+    expect(classifyCameraError(named('NotFoundError')).message).toMatch(/virtual conductor/i)
     expect(classifyCameraError(named('CameraInsecureContext')).canRetry).toBe(false)
   })
 })

@@ -1,11 +1,19 @@
-import * as Tone from 'tone'
+import type * as TT from 'tone'
 import { SECTIONS, type SectionId } from '@/orchestra/sections'
 import type { AudioBackend, BackendInfo } from './backend'
 import { midiToHz } from './pitch'
 import type { ScheduledNote } from './sequencer'
 
+/**
+ * Tone.js is loaded lazily on init() (which runs only after a user gesture): importing it creates a global AudioContext
+ * immediately, and nothing audio-related may exist before the user asks for sound.
+ */
+let Tone: typeof TT
+
 /** Notes are only handed to Web Audio this far ahead of their time, so `silence()` can still cancel the rest. */
 const FLUSH_AHEAD_S = 0.07
+/** Overall make-up gain (≈ +10 dB) before the limiter. */
+const MAKEUP_GAIN = 3.2
 
 interface Pending { n: ScheduledNote; epoch: number }
 
@@ -21,12 +29,12 @@ type Disposable = { dispose(): unknown }
 /** The part of Tone.PolySynth we use (it is generic over the voice type). */
 interface PolyLike extends Disposable {
   maxPolyphony: number
-  connect(n: Tone.ToneAudioNode): unknown
+  connect(n: TT.ToneAudioNode): unknown
   triggerAttackRelease(hz: number, durationSec: number, time: number, velocity: number): unknown
   releaseAll(time: number): unknown
 }
 
-function poly(synth: PolyLike, out: Tone.ToneAudioNode, maxPolyphony: number): Voice {
+function poly(synth: PolyLike, out: TT.ToneAudioNode, maxPolyphony: number): Voice {
   synth.maxPolyphony = maxPolyphony
   synth.connect(out)
   return {
@@ -45,15 +53,15 @@ function poly(synth: PolyLike, out: Tone.ToneAudioNode, maxPolyphony: number): V
  */
 export class ToneBackend implements AudioBackend {
   info: BackendInfo = { kind: 'tone' }
-  private ctx: Tone.Context | null = null
+  private ctx: TT.Context | null = null
   private nodes: Disposable[] = []
   private voices = new Map<SectionId, Voice>()
-  private kit: { kick: Tone.MembraneSynth; snare: Tone.NoiseSynth; cymbal: Tone.NoiseSynth; tick: Tone.NoiseSynth } | null = null
-  private filters = new Map<SectionId, Tone.Filter>()
-  private gains = new Map<SectionId, Tone.Gain>()
-  private meters = new Map<SectionId, Tone.Meter>()
-  private master: Tone.Gain | null = null
-  private gate: Tone.Gain | null = null
+  private kit: { kick: TT.MembraneSynth; snare: TT.NoiseSynth; cymbal: TT.NoiseSynth; tick: TT.NoiseSynth } | null = null
+  private filters = new Map<SectionId, TT.Filter>()
+  private gains = new Map<SectionId, TT.Gain>()
+  private meters = new Map<SectionId, TT.Meter>()
+  private master: TT.Gain | null = null
+  private gate: TT.Gain | null = null
   private pending: Pending[] = []
   private epoch = 0
 
@@ -65,9 +73,12 @@ export class ToneBackend implements AudioBackend {
     if (typeof AudioContext === 'undefined' && typeof (window as unknown as { webkitAudioContext?: unknown }).webkitAudioContext === 'undefined') {
       throw new Error('This browser does not support the Web Audio API.')
     }
+    Tone = await import('tone')
     const ctx = new Tone.Context({ latencyHint: 'interactive', lookAhead: 0.03 })
     this.ctx = ctx
-    Tone.setContext(ctx)
+    // Replace (and dispose) the default global context that importing Tone just created, so exactly one context
+    // exists and `dispose()` can close it.
+    Tone.setContext(ctx, true)
     try {
       await ctx.resume() // must follow a user gesture, otherwise the browser leaves it suspended
     } catch (e) {
@@ -83,9 +94,15 @@ export class ToneBackend implements AudioBackend {
     return n
   }
 
-  private async build(ctx: Tone.Context) {
-    const limiter = this.track(new Tone.Limiter(-1).toDestination())
-    this.gate = this.track(new Tone.Gain(1).connect(limiter))
+  private async build(ctx: TT.Context) {
+    // Output chain: … → make-up gain → limiter → soft clipper → speakers. The clipper (tanh, ceiling ≈ −0.3 dBFS) guarantees
+    // that even master at maximum cannot produce digital clipping; the limiter keeps it from sounding squashed.
+    const clipper = this.track(new Tone.WaveShaper((x) => (Math.tanh(x * 1.2) / Math.tanh(1.2)) * 0.97, 2048).toDestination())
+    const limiter = this.track(new Tone.Limiter(-2).connect(clipper))
+    // Make-up gain: the section/dynamics/master stages are all attenuators (so the user always has headroom to turn
+    // things down); this restores a healthy overall level, and the limiter catches any tutti peaks.
+    const makeup = this.track(new Tone.Gain(MAKEUP_GAIN).connect(limiter))
+    this.gate = this.track(new Tone.Gain(1).connect(makeup))
     this.master = this.track(new Tone.Gain(0.8).connect(this.gate))
     const reverb = this.track(new Tone.Reverb({ decay: 2.4, preDelay: 0.02, wet: 1 }))
     await reverb.ready
@@ -111,7 +128,7 @@ export class ToneBackend implements AudioBackend {
     void ctx
   }
 
-  private makeVoice(id: SectionId, out: Tone.ToneAudioNode): Voice {
+  private makeVoice(id: SectionId, out: TT.ToneAudioNode): Voice {
     switch (id) {
       case 'strings': {
         const vib = this.track(new Tone.Vibrato({ frequency: 5.2, depth: 0.07, type: 'sine' }))
@@ -259,7 +276,8 @@ export class ToneBackend implements AudioBackend {
     for (const { id } of SECTIONS) {
       const v = this.meters.get(id)?.getValue()
       const x = typeof v === 'number' ? v : Array.isArray(v) ? Math.max(...v) : 0
-      out[id] = Math.max(0, Math.min(1, x * 3))
+      // dB scale: −54 dB (and below) → 0, 0 dB → 1. Digital silence is exactly 0; quiet playing is still clearly visible.
+      out[id] = x <= 0 ? 0 : Math.max(0, Math.min(1, (20 * Math.log10(x) + 54) / 54))
     }
     return out
   }

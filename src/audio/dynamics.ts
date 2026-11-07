@@ -15,10 +15,10 @@ export interface SectionDynamics {
 }
 
 export const SECTION_DYNAMICS: Record<SectionId, SectionDynamics> = {
-  strings: { rangeDb: 26, offsetDb: 0, brightnessHz: [1400, 7000] },
-  woodwinds: { rangeDb: 24, offsetDb: -1.5, brightnessHz: [1800, 8000] },
-  brass: { rangeDb: 32, offsetDb: -1, brightnessHz: [700, 6500] },
-  percussion: { rangeDb: 22, offsetDb: -3, brightnessHz: [1500, 9000] },
+  strings: { rangeDb: 20, offsetDb: 0, brightnessHz: [1400, 7000] },
+  woodwinds: { rangeDb: 18, offsetDb: -1.5, brightnessHz: [1800, 8000] },
+  brass: { rangeDb: 25, offsetDb: -1, brightnessHz: [700, 6500] },
+  percussion: { rangeDb: 16, offsetDb: -3, brightnessHz: [1500, 9000] },
 }
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, Number.isFinite(v) ? v : 0))
@@ -41,6 +41,6 @@ export function sectionBrightnessHz(section: SectionId, level: number): number {
 
 /**
  * The composer's note velocity is also scaled a little by the conductor's level (louder playing hits harder):
- * 0.55 at level 0 up to 1.0 at level 1.
+ * 0.65 at level 0 up to 1.0 at level 1.
  */
-export const velocityScale = (level: number) => 0.55 + 0.45 * clamp01(level)
+export const velocityScale = (level: number) => 0.65 + 0.35 * clamp01(level)

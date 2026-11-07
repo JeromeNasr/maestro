@@ -3,22 +3,22 @@ import { StatusTag } from '@/components/ui/StatusTag'
 import { gestureSettings } from '@/config/settings'
 import { useStore } from '@/lib/store'
 import { drawHands, type OverlayContext } from '@/vision/overlay'
-import type { VisionSession } from '@/vision/visionSession'
+import type { ConductingSession } from '@/conducting/conductingSession'
 import { CalibrationPanel } from './CalibrationPanel'
 import { TrackingStatus } from './TrackingStatus'
-import { useVisionSnapshot } from './useVisionSession'
+import { useVision } from './useConductingSession'
 
 const CAMERA_BUSY = ['requesting-permission', 'loading-model', 'running', 'paused']
 
-export function CameraPanel({ session }: { session: VisionSession | null }) {
-  const snap = useVisionSnapshot(session)
+export function CameraPanel({ conducting }: { conducting: ConductingSession }) {
+  const session = conducting.vision
+  const snap = useVision(conducting)
   const cfg = useStore(gestureSettings)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   // Hand the <video> to the session (it owns the stream) and subscribe the canvas to per-frame results.
   useEffect(() => {
-    if (!session) return
     session.attachVideo(videoRef.current)
     const unsub = session.onFrame((frame) => {
       const c = canvasRef.current
@@ -94,17 +94,17 @@ export function CameraPanel({ session }: { session: VisionSession | null }) {
           <p role="status" className="absolute inset-x-0 bottom-3 text-center text-xs uppercase tracking-widest text-ivory-mute">No hands detected — raise your hands into view</p>
         )}
 
-        {session && <CalibrationPanel state={snap.calibration} onCancel={() => session.cancelCalibration()} onRetry={() => session.startCalibration()} />}
+        <CalibrationPanel state={snap.calibration} onCancel={() => session.cancelCalibration()} onRetry={() => session.startCalibration()} />
       </div>
 
       <TrackingStatus snap={snap} />
 
       <div className="flex flex-wrap items-center gap-3 border-t hairline p-4">
         {cameraBusy || status === 'error' && isCamera ? (
-          <button className="btn btn-ghost" onClick={() => session?.stop()}>{status === 'error' ? 'Dismiss' : 'Stop camera'}</button>
+          <button className="btn btn-ghost" onClick={() => session.stop()}>{status === 'error' ? 'Dismiss' : 'Stop camera'}</button>
         ) : null}
         {!cameraBusy && (
-          <button className="btn btn-gold" disabled={!session || isDemo || status === 'requesting-permission'} onClick={() => void session?.startCamera()}>
+          <button className="btn btn-gold" disabled={isDemo || status === 'requesting-permission'} onClick={() => void session.startCamera()}>
             {status === 'error' ? 'Try again' : 'Enable camera'}
           </button>
         )}
@@ -112,20 +112,20 @@ export function CameraPanel({ session }: { session: VisionSession | null }) {
           className="btn btn-ghost"
           disabled={!running}
           title={running ? undefined : 'Calibration needs the live camera'}
-          onClick={() => (calActive ? session?.cancelCalibration() : session?.startCalibration())}
+          onClick={() => (calActive ? session.cancelCalibration() : session.startCalibration())}
         >
           {calActive ? 'Cancel calibration' : 'Calibrate'}
         </button>
         {snap.handedness.origin === 'calibration' && !calActive && (
-          <button className="btn btn-ghost" onClick={() => session?.clearCalibration()} title="Forget the saved left/right validation and hand ranges">
+          <button className="btn btn-ghost" onClick={() => session.clearCalibration()} title="Forget the saved left/right validation and hand ranges">
             Clear calibration
           </button>
         )}
         {isDemo ? (
-          <button className="btn btn-ghost" onClick={() => session?.stop()}>Stop demo</button>
+          <button className="btn btn-ghost" onClick={() => session.stop()}>Stop demo</button>
         ) : (
-          <button className="btn btn-ghost" disabled={!session || cameraBusy} title={cameraBusy ? 'Stop the camera to use demonstration mode' : undefined} onClick={() => session?.startDemo()}>
-            Demo mode
+          <button className="btn btn-ghost" disabled={cameraBusy} title={cameraBusy ? 'Stop the camera to use the virtual conductor' : 'A simulated conductor drives the music — no camera needed'} onClick={() => conducting.startDemo()}>
+            Virtual conductor
           </button>
         )}
         <label className="ml-auto flex items-center gap-3 text-xs text-ivory-mute">

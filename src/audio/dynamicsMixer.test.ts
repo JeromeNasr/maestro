@@ -56,12 +56,12 @@ describe('dynamics mapping', () => {
     expect(Number.isFinite(sectionDb('strings', NaN))).toBe(true)
   })
 
-  it('db/gain conversions round-trip; velocity scales 0.55 → 1', () => {
+  it('db/gain conversions round-trip; velocity scales 0.65 → 1', () => {
     expect(dbToGain(0)).toBe(1)
     expect(dbToGain(-6)).toBeCloseTo(0.501, 2)
     expect(gainToDb(dbToGain(-13))).toBeCloseTo(-13)
     expect(gainToDb(0)).toBe(-Infinity)
-    expect(velocityScale(0)).toBeCloseTo(0.55)
+    expect(velocityScale(0)).toBeCloseTo(0.65)
     expect(velocityScale(1)).toBeCloseTo(1)
   })
 })

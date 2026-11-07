@@ -1,10 +1,10 @@
-import { DEFAULT_GESTURE_CONFIG, type GestureConfig } from '@/config/gestureConfig'
+import { DEFAULT_GESTURE_CONFIG, type GestureConfig, type TimeSignature } from '@/config/gestureConfig'
 import { gestureSettings } from '@/config/settings'
 import { createStore, type Store } from '@/lib/store'
 import { CameraController } from './camera'
 import { cameraErrorInfo, classifyCameraError, type CameraErrorInfo } from './cameraErrors'
 import { CalibrationSession, calibrationStore, IDLE_CALIBRATION, type CalibrationState } from './calibration'
-import { DemoSource } from './demoSource'
+import { DemoSource, type DemoOptions } from './demoSource'
 import type { DetectorFactory, HandDetector } from './detector'
 import { clamp } from './geometry'
 import { HandPipeline } from './handPipeline'
@@ -106,10 +106,15 @@ export class VisionSession {
     this.doc = deps.doc ?? (typeof document !== 'undefined' ? document : null)
     this.pipeline = new HandPipeline({ getConfig: this.getConfig, getHandedness: () => this.handedness() })
     this.store = createStore<VisionSnapshot>({ ...IDLE_SNAPSHOT, handedness: this.handedness() })
-    // Live sensitivity changes → detector thresholds.
+    this.subscribeSettings()
+  }
+
+  /** Live sensitivity changes → detector thresholds; a manual left/right override shows immediately, even while idle. */
+  private subscribeSettings() {
+    if (this.unsubSettings || this.disposed) return
     this.unsubSettings = gestureSettings.subscribe(() => {
       this.detector?.setMinConfidence(effectiveMinConfidence(this.getConfig()))
-      this.patch({ handedness: this.handedness() }) // a manual left/right override should show immediately, even while idle
+      this.patch({ handedness: this.handedness() })
     })
   }
 
@@ -128,6 +133,7 @@ export class VisionSession {
   /** Request camera permission and start real hand tracking. Must be called from an explicit user action. */
   async startCamera(): Promise<void> {
     if (this.disposed || !this.video) return
+    this.subscribeSettings()
     const s = this.store.get().status
     if (s === 'requesting-permission' || s === 'loading-model' || s === 'running' || s === 'paused') return
     this.teardown()
@@ -178,19 +184,31 @@ export class VisionSession {
   }
 
   /** Start the synthetic demonstration (no camera, no model). */
-  startDemo() {
+  startDemo(opts: Partial<DemoOptions> = {}) {
     if (this.disposed) return
+    this.subscribeSettings()
     const s = this.store.get().status
     if (s === 'requesting-permission' || s === 'loading-model') return
     this.teardown()
     ++this.gen
-    this.demo = new DemoSource()
+    this.demo = new DemoSource(opts)
     this.demoStart = this.now()
     this.pipeline.reset()
     this.lastProcessed = 0
     this.attachVisibility()
     this.patch({ status: 'running', source: 'demo', error: null, videoSize: DEMO_SIZE, delegate: null, assetOrigin: null })
     this.schedule()
+  }
+
+  /** Live controls of the synthetic conductor (demonstration mode only). */
+  setDemoBpm(bpm: number) {
+    this.demo?.setBpm(bpm)
+  }
+  setDemoLeftLevel(level: number | 'wave') {
+    this.demo?.setLeftLevel(level)
+  }
+  setDemoTimeSignature(ts: TimeSignature) {
+    this.demo?.setTimeSignature(ts)
   }
 
   /** Stop camera/demo and release everything. Idempotent. */
@@ -202,6 +220,16 @@ export class VisionSession {
       status: 'idle', source: null, error: null, delegate: null, delegateNote: null, assetOrigin: null, videoSize: null,
       fps: 0, inferenceMs: 0, left: NO_SIDE, right: NO_SIDE, confidence: 0, reliability: 0, calibration: IDLE_CALIBRATION,
     })
+  }
+
+  /**
+   * Stop everything and detach from global settings, but stay reusable (used when the Studio unmounts; React StrictMode
+   * mounts → unmounts → mounts again). Unlike dispose() the session can be started again afterwards.
+   */
+  release() {
+    this.stop()
+    this.unsubSettings?.()
+    this.unsubSettings = null
   }
 
   dispose() {
