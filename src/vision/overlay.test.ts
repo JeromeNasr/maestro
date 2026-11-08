@@ -28,23 +28,24 @@ describe('drawHands', () => {
   it('draws 21 landmark points and 21 bones for one hand, plus its label', () => {
     const m = mockCtx()
     drawHands(m.ctx, frameOf(null, trackedHand('right', 0.7, 0.5)), 640, 480)
-    expect(m.calls.arc).toBe(21)
+    // 21 landmark dots + 1 palm ring
+    expect(m.calls.arc).toBe(22)
     expect(m.calls.lineTo).toBe(21)
-    expect(m.texts).toEqual(['RIGHT 95%'])
+    expect(m.texts).toEqual(['RIGHT · BEAT 95%'])
   })
 
   it('draws both hands', () => {
     const m = mockCtx()
     drawHands(m.ctx, frameOf(trackedHand('left', 0.3, 0.5), trackedHand('right', 0.7, 0.5)), 640, 480)
-    expect(m.calls.arc).toBe(42)
-    expect(m.texts).toEqual(['LEFT 95%', 'RIGHT 95%'])
+    expect(m.calls.arc).toBe(44)
+    expect(m.texts).toEqual(['LEFT · DYNAMICS 95%', 'RIGHT · BEAT 95%'])
   })
 
   it('draws a held (temporarily lost) hand dimmed and says so', () => {
     const m = mockCtx()
     drawHands(m.ctx, frameOf(null, trackedHand('right', 0.7, 0.5, 'holding')), 640, 480)
     expect(Math.max(...m.strokeAlphas)).toBeLessThan(0.5)
-    expect(m.texts[0]).toMatch(/held/)
+    expect(m.texts[0]).toMatch(/signal lost/)
   })
 
   it('only clears the canvas when there is no frame or no hands', () => {

@@ -2,12 +2,13 @@ import type { GestureConfig } from '@/config/gestureConfig'
 import { FINGERTIP_INDICES } from './handTopology'
 import { handSize, isValidLandmarks, palmCenter, toDisplay } from './geometry'
 import { HandKinematics } from './handKinematics'
-import { effectiveHandedness, resolveSides, type HandednessResolution, type SideCandidate } from './handedness'
+import { effectiveHandedness, type HandednessResolution } from './handedness'
+import { HandIdentityTracker, type IdentityCandidate } from './handIdentity'
 import { LandmarkFilter } from './landmarkFilter'
 import { TrackingMonitor } from './trackingMonitor'
 import type { DetectionResult, DetectionSummary, FrameSource, HandFrame, Side, TrackedHand } from './types'
 
-interface Candidate extends SideCandidate {
+interface Candidate extends IdentityCandidate {
   landmarks: ReturnType<typeof toDisplay>
 }
 
@@ -24,6 +25,7 @@ export class HandPipeline {
   private filters: Record<Side, LandmarkFilter> = { left: new LandmarkFilter(), right: new LandmarkFilter() }
   private kin: Record<Side, HandKinematics> = { left: new HandKinematics(), right: new HandKinematics() }
   private monitor: TrackingMonitor<TrackedHand>
+  readonly identity = new HandIdentityTracker()
 
   constructor(private deps: PipelineDeps) {
     this.monitor = new TrackingMonitor<TrackedHand>({
@@ -41,10 +43,10 @@ export class HandPipeline {
       .filter((h) => isValidLandmarks(h.landmarks))
       .map((h) => {
         const landmarks = toDisplay(h.landmarks)
-        return { label: h.label, score: h.score, palm: palmCenter(landmarks), landmarks }
+        return { label: h.label, score: h.score, palm: palmCenter(landmarks), size: handSize(landmarks), landmarks }
       })
     const detections: DetectionSummary[] = candidates.map((c) => ({ reportedLabel: c.label, score: c.score, palm: c.palm }))
-    const assigned = resolveSides(candidates, res)
+    const assigned = this.identity.assign(candidates, res, nowMs)
 
     const observed: Record<Side, TrackedHand | null> = { left: null, right: null }
     for (const side of ['left', 'right'] as const) {
@@ -88,6 +90,7 @@ export class HandPipeline {
       this.kin[s].reset()
     }
     this.monitor.reset()
+    this.identity.reset()
   }
 }
 

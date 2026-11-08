@@ -28,3 +28,14 @@ export function isAllowedUrl(url: string, selfOrigin: string, allowedOrigins: re
     return false
   }
 }
+
+/**
+ * One user-facing confidence becomes three MediaPipe thresholds. Detection (finding a hand from scratch) is strict to
+ * avoid phantom hands; presence and TRACKING are deliberately more forgiving. MediaPipe only re-runs the expensive palm
+ * detector when tracking confidence drops, so a lower tracking threshold keeps a fast, motion-blurred conducting stroke
+ * on the cheap tracking path (fewer dropouts, less CPU) instead of losing and re-acquiring the hand every beat.
+ */
+export function confidenceTriplet(c: number): { detection: number; presence: number; tracking: number } {
+  const clamp = (v: number) => Math.min(0.95, Math.max(0.1, v))
+  return { detection: clamp(c), presence: clamp(c * 0.85), tracking: clamp(c * 0.6) }
+}

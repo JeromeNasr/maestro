@@ -25,7 +25,7 @@ export interface DetectionResult { hands: RawDetection[] }
 
 /** 'tracking' = seen this frame; 'holding' = missed, last pose held within the grace period; 'lost' = gone. */
 export type HandStatus = 'tracking' | 'holding' | 'lost'
-export type LabelSource = 'reported' | 'swapped' | 'positional'
+export type LabelSource = 'reported' | 'swapped' | 'positional' | 'tracked'
 
 export interface HandKinematicsState {
   /** Palm velocity, normalised image units per second (display space; +y is down). */
