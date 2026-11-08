@@ -112,6 +112,7 @@ test('a real classic (Beethoven 5) loads its 12 instruments, every family sounds
     for (const k of Object.keys(levels) as (keyof typeof levels)[]) levels[k] = Math.max(levels[k], Number(await page.getByRole('meter', { name: `${k} output level` }).getAttribute('aria-valuenow')))
     peak = Math.max(peak, await outputPeak(page, 150))
   }
+  // eslint-disable-next-line no-console -- measured values are reported for the record
   console.log(`BEETHOVEN loadMs=${loadMs} files=${samples.size} peak=${peak.toFixed(3)} levels=${JSON.stringify(levels)}`)
   expect(levels.Strings).toBeGreaterThan(0.2)
   expect(levels.Woodwinds).toBeGreaterThan(0.1)
@@ -123,6 +124,7 @@ test('a real classic (Beethoven 5) loads its 12 instruments, every family sounds
   await page.getByRole('button', { name: 'Solo Percussion' }).click()
   await page.waitForTimeout(500)
   const timpaniPeak = await outputPeak(page, 25_000)
+  // eslint-disable-next-line no-console -- measured values are reported for the record
   console.log(`BEETHOVEN percussion-only output peak=${timpaniPeak.toFixed(3)}`)
   expect(timpaniPeak).toBeGreaterThan(0.12)
 })

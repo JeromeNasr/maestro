@@ -56,6 +56,7 @@ async function measure(page: Page, label: string, blockSamples: boolean) {
   const lateNotes = await page.getByTestId('late-notes').count()
   const source = (await page.getByTestId('sound-source').textContent()) ?? ''
   const out = { label, source, startMs, ...r, lateNotes, fetchedSamplesKB: Math.round(bytes.samples / 1024), fetchedJsKB: Math.round(bytes.js / 1024) }
+  // eslint-disable-next-line no-console -- measured values are reported for the record
   console.log(`PERF ${JSON.stringify(out)}`)
   return out
 }
