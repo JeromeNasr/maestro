@@ -57,7 +57,7 @@ test('a full session (play, tune, mix, pause, stop, analytics) produces no page 
   await page.waitForTimeout(3000)
   await page.getByRole('button', { name: 'Pause', exact: true }).click()
   await page.getByRole('button', { name: 'Resume', exact: true }).click()
-  await page.waitForTimeout(3000)
+  await page.waitForTimeout(6000) // playing time must clear the 5 s minimum for a performance to be recorded
   await page.getByRole('button', { name: 'Stop', exact: true }).click()
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Analytics' }).click()
   await expect(page.getByTestId('selected-session')).toBeVisible()
