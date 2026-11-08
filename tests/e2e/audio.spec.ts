@@ -85,3 +85,44 @@ test('master at maximum and fortissimo cannot clip', async ({ page }) => {
   expect(peak).toBeGreaterThan(0.1)
   expect(peak).toBeLessThanOrEqual(0.99)
 })
+
+test('a real classic (Beethoven 5) loads its 12 instruments, every family sounds, and nothing clips', async ({ page }) => {
+  const requests: string[] = []
+  page.on('request', (r) => requests.push(r.url()))
+  await page.goto('/library')
+  await page.getByRole('article', { name: /symphony no\. 5/i }).getByRole('button', { name: /select for studio/i }).click()
+  await page.goto('/studio')
+  await expect(page.getByRole('heading', { level: 1, name: /symphony no\. 5/i })).toBeVisible()
+  await page.getByRole('button', { name: 'Virtual conductor' }).click()
+  await page.getByRole('checkbox', { name: /tracking dropouts/ }).uncheck()
+  await page.getByRole('checkbox', { name: /waves by itself/ }).uncheck()
+  const t0 = Date.now()
+  await page.getByRole('button', { name: 'Start', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeEnabled({ timeout: 90_000 })
+  const loadMs = Date.now() - t0
+  await expect(page.getByTestId('sound-source')).toHaveAttribute('data-kind', 'sampled')
+  const samples = new Set(requests.filter((u) => u.includes('/samples/') && u.endsWith('.ogg')))
+  // 11 sampled instruments (violins II reuse the violins): strings 4 sets, woodwinds 4, brass 2 (horns, trumpets), timpani
+  const dirs = new Set([...samples].map((u) => u.split('/samples/')[1].split('/')[0]))
+  expect([...dirs].sort()).toEqual(['basses', 'bassoons', 'cellos', 'clarinets', 'flutes', 'horns', 'oboes', 'timpani', 'trumpets', 'violas', 'violins'])
+  const levels = { Strings: 0, Woodwinds: 0, Brass: 0, Percussion: 0 }
+  const t1 = Date.now()
+  let peak = 0
+  while (Date.now() - t1 < 45_000) {
+    for (const k of Object.keys(levels) as (keyof typeof levels)[]) levels[k] = Math.max(levels[k], Number(await page.getByRole('meter', { name: `${k} output level` }).getAttribute('aria-valuenow')))
+    peak = Math.max(peak, await outputPeak(page, 150))
+  }
+  console.log(`BEETHOVEN loadMs=${loadMs} files=${samples.size} peak=${peak.toFixed(3)} levels=${JSON.stringify(levels)}`)
+  expect(levels.Strings).toBeGreaterThan(0.2)
+  expect(levels.Woodwinds).toBeGreaterThan(0.1)
+  expect(levels.Brass).toBeGreaterThan(0.1)
+  expect(peak).toBeLessThanOrEqual(0.99)
+  // Timpani are sparse and short; judge them on the actual output peak with only the percussion soloed.
+  await page.getByRole('radio', { name: 'Fixed tempo' }).check()
+  await page.getByRole('slider', { name: /Fixed tempo as a percentage/ }).fill('150')
+  await page.getByRole('button', { name: 'Solo Percussion' }).click()
+  await page.waitForTimeout(500)
+  const timpaniPeak = await outputPeak(page, 25_000)
+  console.log(`BEETHOVEN percussion-only output peak=${timpaniPeak.toFixed(3)}`)
+  expect(timpaniPeak).toBeGreaterThan(0.12)
+})

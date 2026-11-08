@@ -9,7 +9,7 @@ import type { SequencerOptions } from '@/audio/sequencer'
 import type { GestureConfig, TimeSignature } from '@/config/gestureConfig'
 import type { CueKind, GestureSnapshot } from '@/gesture/types'
 import { createStore, type Store } from '@/lib/store'
-import { COMPOSITIONS, getComposition } from '@/library/compositions'
+import { DEFAULT_COMPOSITION_ID, getComposition } from '@/library/compositions'
 import { selectedCompositionId } from '@/library/selection'
 import type { Composition } from '@/library/types'
 import type { CameraController } from '@/vision/camera'
@@ -101,7 +101,7 @@ export class ConductingSession {
     this.vision = new VisionSession({ createDetector: deps.createDetector, camera: deps.camera, scheduler: deps.scheduler, now: deps.now, getConfig: deps.getConfig, doc: deps.doc })
     this.gesture = new GestureInput(this.vision, deps.getConfig)
     const saved = getComposition(selectedCompositionId.get())
-    const first = (saved?.status === 'available' ? saved : COMPOSITIONS.find((c) => c.status === 'available')) ?? null
+    const first = (saved?.status === 'available' ? saved : getComposition(DEFAULT_COMPOSITION_ID)) ?? null
     this.store = createStore<StudioSnapshot>({
       composition: first, load: 'idle', loadError: null, tracks: [], timeSignature: first?.timeSignature ?? '4/4', tempoMode: 'follow', fixedTempoPct: 100,
       lastBeat: null, notice: null, summary: null, summaryNote: null, demo: DEFAULT_DEMO,
