@@ -15,6 +15,7 @@ test('the Studio can be operated from the keyboard alone', async ({ page }) => {
   expect(outline).not.toBe('none')
   await page.keyboard.press('Enter')
   await expect(page.getByTestId('audio-status')).toContainText('Audio running')
+  await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeEnabled({ timeout: 30_000 }) // the orchestra's samples have loaded and the music is playing
   await page.locator('body').click({ position: { x: 5, y: 5 } }) // move focus off any button so Space is the global pause key
   await page.keyboard.press('Space')
   await expect(page.getByRole('button', { name: 'Resume', exact: true })).toBeEnabled()
@@ -28,6 +29,7 @@ test('mobile layout stays usable while a performance is running and after it end
   await page.getByRole('button', { name: 'Virtual conductor' }).click()
   await page.getByRole('button', { name: 'Start', exact: true }).click()
   await expect(page.getByTestId('audio-status')).toContainText('Audio running')
+  await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeEnabled({ timeout: 30_000 }) // the orchestra's samples have loaded and the music is playing
   await page.waitForTimeout(6500)
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0)
   const bar = page.getByRole('region', { name: 'Emergency controls' })
@@ -47,6 +49,7 @@ test('a full session (play, tune, mix, pause, stop, analytics) produces no page 
   await page.getByRole('button', { name: 'Virtual conductor' }).click()
   await page.getByRole('button', { name: 'Start', exact: true }).click()
   await expect(page.getByTestId('audio-status')).toContainText('Audio running')
+  await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeEnabled({ timeout: 30_000 }) // the orchestra's samples have loaded and the music is playing
   await page.getByText(/^Tuning/).click()
   await page.getByRole('slider', { name: 'Minimum stroke size' }).fill('0.9')
   await page.getByRole('button', { name: 'Mute Brass' }).click()
@@ -68,6 +71,7 @@ test('a composition switch loads the new score and the right conducting options'
   await expect(page.getByLabel('Conduct in')).toHaveValue('2/4')
   await page.getByRole('button', { name: 'Start', exact: true }).click()
   await expect(page.getByTestId('audio-status')).toContainText('Audio running')
+  await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeEnabled({ timeout: 30_000 }) // the orchestra's samples have loaded and the music is playing
   await expect.poll(async () => Number(await page.getByTestId('position').getAttribute('data-bar')), { timeout: 15000 }).toBeGreaterThan(2)
   await page.getByRole('button', { name: 'Stop', exact: true }).click()
 })
