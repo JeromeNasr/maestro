@@ -1,5 +1,6 @@
 import { Midi } from '@tonejs/midi'
 import type { SectionId } from '@/orchestra/sections'
+import { instrumentForNote, instrumentForTrack } from './instruments'
 import { mapTrack } from './sectionMapping'
 import type { MeterMark, Score, ScoreNote, ScoreTrack, TempoMark } from './score'
 
@@ -40,9 +41,17 @@ export function parseMidi(data: ArrayBuffer | Uint8Array, opts: ParseOptions = {
     const program = percussion ? null : t.instrument.number
     const { section, mappedBy } = mapTrack({ name: t.name || t.instrument.name || '', program, channel: t.channel, percussion }, index, opts.overrides)
     const id = tracks.length
-    tracks.push({ id, name: t.name || t.instrument.name || `Track ${index + 1}`, program, channel: t.channel, section, noteCount: t.notes.length, mappedBy })
+    const trackName = t.name || t.instrument.name || `Track ${index + 1}`
+    const sortedPitches = t.notes.map((n) => n.midi).sort((a, b) => a - b)
+    const medianMidi = sortedPitches[sortedPitches.length >> 1]
+    const inst = instrumentForTrack({ name: trackName, program, section, medianMidi, kit: percussion })
+    const used = new Set<ScoreNote['instrument']>()
+    const trackNotes: ScoreNote[] = []
     for (const n of t.notes) {
-      notes.push({
+      const instrument = inst === 'register' ? instrumentForNote(section, n.midi, percussion) : inst
+      used.add(instrument)
+      trackNotes.push({
+        instrument,
         section,
         midi: n.midi,
         startBeat: n.ticks / ppq,
@@ -52,6 +61,8 @@ export function parseMidi(data: ArrayBuffer | Uint8Array, opts: ParseOptions = {
         ...(percussion ? { kit: true } : {}),
       })
     }
+    tracks.push({ id, name: trackName, program, channel: t.channel, section, noteCount: t.notes.length, mappedBy, instruments: [...used] as NonNullable<ScoreTrack['instruments']> })
+    notes.push(...trackNotes)
   })
   if (notes.length === 0) throw new MidiParseError('MIDI file contains no notes')
   notes.sort((a, b) => a.startBeat - b.startBeat || a.midi - b.midi)

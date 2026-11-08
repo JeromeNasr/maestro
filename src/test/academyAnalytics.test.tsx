@@ -9,6 +9,7 @@ import type { SessionRecord } from '@/analytics/types'
 import { installStudioEnv } from './studioEnv'
 
 vi.mock('@/audio/toneBackend', async () => await import('./fakeToneBackend'))
+vi.mock('@/audio/orchestraBackend', async () => await import('./fakeToneBackend'))
 vi.mock('@/vision/mediapipeDetector', async () => await import('./fakeMediapipe'))
 
 const view = (path: string) => render(<RouterProvider router={createMemoryRouter(routes, { initialEntries: [path] })} />)

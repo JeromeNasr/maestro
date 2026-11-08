@@ -1,4 +1,5 @@
 import type { SectionId } from '@/orchestra/sections'
+import type { InstrumentId } from './instruments'
 import { tempoRatioAt, type Score } from './score'
 
 /** A note placed on the audio clock: when to sound it, for how long, and how hard. Pitch is exactly the MIDI note. */
@@ -11,6 +12,8 @@ export interface ScheduledNote {
   /** Composer's velocity, 0–1. */
   velocity: number
   kit?: boolean
+  /** The orchestral instrument that sounds the note (the backend falls back to the section's default if absent). */
+  instrument?: InstrumentId
   /** Score position of the note, for diagnostics. */
   beat: number
 }
@@ -174,7 +177,7 @@ export class Sequencer {
       }
       const bpmEff = Math.max(1, at.bpm * tempoRatioAt(this.score, n.startBeat))
       emit({
-        section: n.section, midi: n.midi, velocity: n.velocity, beat: n.startBeat, ...(n.kit ? { kit: true } : {}),
+        section: n.section, midi: n.midi, velocity: n.velocity, beat: n.startBeat, ...(n.kit ? { kit: true } : {}), ...(n.instrument ? { instrument: n.instrument } : {}),
         timeSec: at.t, durationSec: Math.max(0.03, (n.durationBeats * 60) / bpmEff),
       })
     }

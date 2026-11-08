@@ -9,3 +9,4 @@ test-results
 
 # Self-hosted MediaPipe WASM (copied from node_modules by scripts/setup-mediapipe-assets.mjs)
 public/mediapipe/
+.cache/

@@ -5,7 +5,7 @@ import { midiToHz } from './pitch'
 import type { ScheduledNote } from './sequencer'
 
 /**
- * Tone.js is loaded lazily on init() (which runs only after a user gesture): importing it creates a global AudioContext
+ * Tone.js (the synth fallback only) is loaded lazily on init() (which runs only after a user gesture): importing it creates a global AudioContext
  * immediately, and nothing audio-related may exist before the user asks for sound.
  */
 let Tone: typeof TT

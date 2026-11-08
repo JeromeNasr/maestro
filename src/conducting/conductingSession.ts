@@ -237,6 +237,8 @@ export class ConductingSession {
       await audio.init()
       if (!this.active || audio !== this.audio) return false
       if (audio.snapshot.status !== 'ready') return false
+      if (!(await audio.prepare())) return false
+      if (!this.active || audio !== this.audio) return false
       if (this.transport === 'playing') return true
       this.gesture.reset()
       this.gesture.setTimeSignature(this.store.get().timeSignature)
@@ -256,7 +258,8 @@ export class ConductingSession {
   /** Enable audio without starting (lets hand cues start the piece later). Requires a user gesture. */
   async enableAudio(): Promise<boolean> {
     await this.audio?.init()
-    return this.audio?.snapshot.status === 'ready'
+    if (this.audio?.snapshot.status !== 'ready') return false
+    return this.audio.prepare()
   }
 
   pause() {

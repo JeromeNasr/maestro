@@ -7,6 +7,7 @@ import { selectedCompositionId } from '@/library/selection'
 import { installStudioEnv } from './studioEnv'
 
 vi.mock('@/audio/toneBackend', async () => await import('./fakeToneBackend'))
+vi.mock('@/audio/orchestraBackend', async () => await import('./fakeToneBackend'))
 vi.mock('@/vision/mediapipeDetector', async () => await import('./fakeMediapipe'))
 
 beforeEach(() => {

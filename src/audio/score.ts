@@ -1,4 +1,5 @@
 import type { SectionId } from '@/orchestra/sections'
+import type { InstrumentId } from './instruments'
 
 /**
  * Musical score in BEATS (quarter notes), independent of tempo. Tempo only decides how fast beats pass, so changing
@@ -15,6 +16,8 @@ export interface ScoreNote {
   trackId: number
   /** Drum-kit note (General MIDI channel 10): `midi` selects the drum, not a pitch. */
   kit?: boolean
+  /** Which orchestral instrument plays this note (derived from the track's program/name/register). */
+  instrument?: InstrumentId
 }
 
 export interface TempoMark { beat: number; bpm: number }
@@ -28,6 +31,8 @@ export interface ScoreTrack {
   channel: number
   section: SectionId
   noteCount: number
+  /** Instruments that play this track's notes (several when the track doubles desks, e.g. "Cellos & Basses"). */
+  instruments?: InstrumentId[]
   /** Why this track was assigned to its section (documented in the Studio and LICENSES/CLAUDE docs). */
   mappedBy: 'override' | 'drum-channel' | 'program' | 'name' | 'fallback'
 }
@@ -64,6 +69,11 @@ export function tempoRatioAt(score: Score, beat: number): number {
 
 export function sectionsUsed(score: Score): SectionId[] {
   return [...new Set(score.notes.map((n) => n.section))]
+}
+
+/** Instruments that actually play in the score (drives which sample sets are loaded). */
+export function instrumentsUsed(score: Score): InstrumentId[] {
+  return [...new Set(score.notes.flatMap((n) => (n.instrument ? [n.instrument] : [])))]
 }
 
 /** Duration in seconds if played exactly as written (reference tempo, composer's tempo map). */
