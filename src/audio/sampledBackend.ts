@@ -44,12 +44,10 @@ export class SampleLoadError extends Error {
 
 /** Fetch with the Cache API (when available) so decoded-on-demand audio is served offline after the first visit. */
 export async function fetchBytesCached(url: string, cacheName: string): Promise<ArrayBuffer> {
-  let cache: Cache | null = null
-  try {
-    cache = typeof caches !== 'undefined' ? await caches.open(cacheName) : null
-  } catch {
-    cache = null // storage blocked (private mode, quota): go straight to the network
-  }
+  if (typeof caches === 'undefined') return fetchPlain(url)
+  const cache = await caches
+    .open(cacheName)
+    .catch(() => null) // storage blocked (private mode, quota): go straight to the network
   try {
     const hit = await cache?.match(url)
     if (hit) return await hit.arrayBuffer()
@@ -59,6 +57,12 @@ export async function fetchBytesCached(url: string, cacheName: string): Promise<
   const res = await fetch(url)
   if (!res.ok) throw new SampleLoadError(`Could not load ${url} (HTTP ${res.status})`)
   if (cache) void cache.put(url, res.clone()).catch(() => undefined)
+  return res.arrayBuffer()
+}
+
+async function fetchPlain(url: string): Promise<ArrayBuffer> {
+  const res = await fetch(url)
+  if (!res.ok) throw new SampleLoadError(`Could not load ${url} (HTTP ${res.status})`)
   return res.arrayBuffer()
 }
 

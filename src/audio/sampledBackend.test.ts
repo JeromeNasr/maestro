@@ -59,8 +59,9 @@ describe('SampledBackend', () => {
     backend.pump()
     const src = ctx.created.sources.at(-1) as FakeSource
     expect(src.buffer?.id).toBe('violins/60.ogg')
-    expect(src.playbackRate.value).toBeGreaterThan(2 ** (4 / 12) * 2 ** (-12 / 1200)) // 4 semitones, ± a few cents of ensemble detune
-    expect(src.playbackRate.value).toBeLessThan(2 ** (4 / 12) * 2 ** (-8 / 1200) * 1.005)
+    // 4 semitones + the recording's −10¢ correction, ± at most 2.5¢ of random ensemble detune
+    expect(src.playbackRate.value).toBeGreaterThanOrEqual(2 ** (4 / 12 - 12.5 / 1200))
+    expect(src.playbackRate.value).toBeLessThanOrEqual(2 ** (4 / 12 - 7.5 / 1200))
     expect(src.loop).toBe(true)
     expect(src.loopStart).toBe(0.5)
     expect(src.loopEnd).toBe(3)
