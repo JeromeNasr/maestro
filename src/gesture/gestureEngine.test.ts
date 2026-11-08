@@ -257,11 +257,37 @@ describe('GestureEngine — false gestures are not beats', () => {
 })
 
 describe('GestureEngine — configuration, sensitivity and time signature', () => {
-  it('small gestures need higher sensitivity', () => {
-    const small = { timeSignature: '4/4' as const, bpm: 90, scale: 0.4 }
-    expect(simulate({ demo: small, seconds: 20 }).beats.length).toBeLessThan(5)
-    const hi = simulate({ demo: small, config: { tracking: { ...DEFAULT_GESTURE_CONFIG.tracking, sensitivity: 2 } }, seconds: 20 })
-    expect(hi.beats.length).toBeGreaterThan(15)
+  it('a small but regular gesture (40–60 % size) is adopted automatically after a few strokes', () => {
+    for (const scale of [0.4, 0.5, 0.6]) {
+      const r = simulate({ demo: { timeSignature: '4/4', bpm: 90, scale, style: 'flowing', noise: 0.004 }, seconds: 30 })
+      expect(r.beats.length, `scale ${scale}`).toBeGreaterThan(30) // of ~45 (the first strokes are the evidence the threshold adapts to)
+      expect(Math.abs(lastBpm(r) - 90), `scale ${scale}`).toBeLessThan(4)
+      expect(outOfOrder(r, '4/4'), `scale ${scale}`).toBe(0)
+    }
+  })
+
+  it('a gesture below the tremor floor (≈ 25 %) is still ignored, unless sensitivity is raised', () => {
+    const tiny = { timeSignature: '4/4' as const, bpm: 90, scale: 0.25 }
+    expect(simulate({ demo: tiny, seconds: 20 }).beats.length).toBeLessThan(5)
+    const hi = simulate({ demo: tiny, config: { tracking: { ...DEFAULT_GESTURE_CONFIG.tracking, sensitivity: 3 } }, seconds: 20 })
+    expect(hi.beats.length).toBeGreaterThan(10)
+  })
+
+  it('the small-gesture adaptation does not make random waving count: small irregular movement produces no beats and no tempo', () => {
+    let leaks = 0
+    for (const seed of [1, 2, 3, 4, 5, 6]) {
+      const wave = randomWave(seed, 60, 0.3, 0.8)
+      // shrink the wander to a small region so its strokes are in the "small gesture" amplitude range
+      const small = (t: number) => {
+        const p = wave(t)
+        return { x: 0.72 + (p.x - 0.72) * 0.22, y: 0.5 + (p.y - 0.5) * 0.3 }
+      }
+      const r = simulate({ demo: { paths: { right: small }, noise: 0.003 }, seconds: 60 })
+      leaks += r.tempos.length
+    }
+    // Measured: 2 tempo events in 6 × 60 s of small random waving with the adaptation (0 without it); large random waving gives
+    // ~19–20 either way. Beats can still appear, tempo (what changes the music) almost never.
+    expect(leaks).toBeLessThanOrEqual(3)
   })
 
   it('thresholds are configurable: a larger minimum amplitude rejects normal strokes as too small', () => {
