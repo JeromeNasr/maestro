@@ -23,7 +23,7 @@ beforeEach(() => {
 describe('Academy — lessons, quizzes and progress', () => {
   it('starts with no progress at all', async () => {
     view('/academy')
-    expect(await screen.findByTestId('course-progress')).toHaveTextContent('0 of 11 lessons complete')
+    expect(await screen.findByTestId('course-progress')).toHaveTextContent('0 of 14 lessons complete')
     expect(screen.getByTestId('lesson-progress')).toHaveTextContent('0 of 2 required items done')
   })
 
@@ -37,7 +37,7 @@ describe('Academy — lessons, quizzes and progress', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Check answers' }))
     expect(screen.getByTestId('quiz-result')).toHaveTextContent('3 of 3 correct — passed')
     expect(screen.getByTestId('lesson-progress')).toHaveTextContent('Lesson complete')
-    expect(screen.getByTestId('course-progress')).toHaveTextContent('1 of 11 lessons complete')
+    expect(screen.getByTestId('course-progress')).toHaveTextContent('1 of 14 lessons complete')
     expect(academyProgress.get().lessons.fundamentals.quiz).toMatchObject({ best: 3, passed: true })
     expect(JSON.parse(localStorage.getItem('maestro.academy.v1')!).lessons.fundamentals.read).toBe(true) // persisted
   })
