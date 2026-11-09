@@ -154,7 +154,7 @@ export const DEFAULT_GESTURE_CONFIG: GestureConfig = {
     minChainForTempo: 4,
     patternResetGapMs: 1500,
   },
-  tempo: { minBpm: 40, maxBpm: 200, medianWindow: 5, smoothing: 0.35, maxBpmStepPerBeat: 10, outlierFraction: 0.35 },
+  tempo: { minBpm: 40, maxBpm: 200, medianWindow: 5, smoothing: 0.5, maxBpmStepPerBeat: 14, outlierFraction: 0.35 },
   dynamics: {
     boundaries: [0.17, 0.34, 0.5, 0.67, 0.84],
     hysteresis: 0.03,
@@ -180,7 +180,7 @@ export const DEFAULT_GESTURE_CONFIG: GestureConfig = {
   },
   tracking: {
     // One-Euro parameters for coordinates normalised to the image (speeds are image-widths per second).
-    filterMinCutoff: 1.5,
+    filterMinCutoff: 1.0,
     filterBeta: 4,
     lossGraceMs: 300,
     minDetectionConfidence: 0.6,

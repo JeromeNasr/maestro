@@ -98,3 +98,24 @@ describe('HandPipeline', () => {
     expect(make().process(result(), 0, 'demo').source).toBe('demo')
   })
 })
+
+describe('HandPipeline — detector glitches', () => {
+  const frames = (xs: number[]) => {
+    const p = make()
+    return xs.map((x, i) => p.process(result(rawHand('Right', x)), i * 33).right?.palm.x ?? null)
+  }
+  it('a single-frame jump that returns is not tracked as movement', () => {
+    const out = frames([0.7, 0.7, 0.7, 0.7, 0.1, 0.7, 0.7, 0.7])
+    expect(out[0]).not.toBeNull()
+    expect(out.every((x) => x === null || x > 0.6)).toBe(true) // never follows the glitch to x = 0.1
+    expect(out.filter((x) => x === null).length).toBeLessThanOrEqual(1)
+  })
+  it('a real, sustained relocation is accepted after one frame of confirmation', () => {
+    const out = frames([0.7, 0.7, 0.7, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45])
+    expect(out.at(-1)!).toBeLessThan(0.55)
+  })
+  it('fast but plausible strokes are never rejected', () => {
+    const xs = Array.from({ length: 20 }, (_, i) => 0.6 + 0.12 * Math.sin(i / 2))
+    expect(frames(xs).every((x) => x !== null)).toBe(true)
+  })
+})

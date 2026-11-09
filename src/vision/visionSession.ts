@@ -91,6 +91,10 @@ export class VisionSession {
   private rafId: number | null = null
   private lastVideoTime = -1
   private lastTs = 0
+  /** True capture time of the newest camera frame (from requestVideoFrameCallback), when the browser provides it. */
+  private captureMs: number | null = null
+  private lastStamp = -Infinity
+  private rvfc: { el: HTMLVideoElement; id: number } | null = null
   private lastProcessed = 0
   private fps = 0
   private inferenceMs = 0
@@ -125,7 +129,28 @@ export class VisionSession {
   // ───────────────────────── public API ─────────────────────────
 
   attachVideo(el: HTMLVideoElement | null) {
+    this.stopFrameClock()
     this.video = el
+    this.startFrameClock(el)
+  }
+
+  /**
+   * Frames are stamped with the moment the camera captured them, not the moment our 60 Hz loop happened to notice them:
+   * the loop adds up to 16 ms of random delay per frame, which shows up as jitter in every beat interval. Chrome reports
+   * `captureTime` for camera streams; where it is missing the loop's own clock is used, as before.
+   */
+  private startFrameClock(el: HTMLVideoElement | null) {
+    if (!el || typeof el.requestVideoFrameCallback !== 'function') return
+    const cb = (_t: number, meta: VideoFrameCallbackMetadata) => {
+      this.captureMs = typeof meta.captureTime === 'number' ? meta.captureTime : null
+      if (this.rvfc?.el === el) this.rvfc.id = el.requestVideoFrameCallback(cb)
+    }
+    this.rvfc = { el, id: el.requestVideoFrameCallback(cb) }
+  }
+  private stopFrameClock() {
+    if (this.rvfc && typeof this.rvfc.el.cancelVideoFrameCallback === 'function') this.rvfc.el.cancelVideoFrameCallback(this.rvfc.id)
+    this.rvfc = null
+    this.captureMs = null
   }
 
   /** Subscribe to every processed frame (used by the canvas overlay). `null` = cleared (stopped). */
@@ -178,6 +203,7 @@ export class VisionSession {
     this.pipeline.reset()
     this.lastVideoTime = -1
     this.lastTs = 0
+    this.lastStamp = -Infinity
     this.lastProcessed = 0
     this.inferenceSamples = 0
     this.inferenceMs = 0
@@ -239,6 +265,7 @@ export class VisionSession {
   dispose() {
     if (this.disposed) return
     this.disposed = true
+    this.stopFrameClock()
     this.gen++
     this.teardown()
     this.unsubSettings?.()
@@ -304,6 +331,10 @@ export class VisionSession {
       this.lastVideoTime = v.currentTime
       const ts = Math.max(now, this.lastTs + 1) // MediaPipe requires strictly increasing timestamps
       this.lastTs = ts
+      // Time stamp for the gesture logic: the real capture time if it is recent and plausible, otherwise "now".
+      const cap = this.captureMs
+      const stamp = cap !== null && cap <= now && now - cap < 200 && cap > this.lastStamp ? cap : Math.max(now, this.lastStamp + 0.001)
+      this.lastStamp = stamp
       const fail = () => {
         this.teardown()
         this.fail({ kind: 'unknown', title: 'Hand tracking stopped', message: 'The hand-tracking model reported an error and was stopped. Press Enable camera to try again.', canRetry: true })
@@ -324,7 +355,7 @@ export class VisionSession {
             // Ignore results that arrive after a stop / restart / detector swap. The frame keeps its CAPTURE time, so
             // velocities are not distorted by inference latency.
             if (gen !== this.gen || this.detector !== d || this.store.get().status !== 'running') return
-            this.finishFrame(r, now, this.now() - now, 'camera')
+            this.finishFrame(r, stamp, this.now() - now, 'camera')
           },
           () => {
             this.inflight = false
@@ -334,7 +365,7 @@ export class VisionSession {
         )
         return
       }
-      this.finishFrame(res, now, this.now() - now, 'camera')
+      this.finishFrame(res, stamp, this.now() - now, 'camera')
       return
     }
     this.finishFrame(this.demo!.detect(now - this.demoStart), now, 0, 'demo')

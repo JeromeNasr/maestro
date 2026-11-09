@@ -115,3 +115,38 @@ describe('TempoEstimator — interval → BPM', () => {
     expect(e.intervalMs).toBeNull()
   })
 })
+
+describe('TempoEstimator — frame-quantised beat times', () => {
+  const cfg = { minBpm: 40, maxBpm: 200, medianWindow: 5, smoothing: 0.5, maxBpmStepPerBeat: 14, outlierFraction: 0.35 }
+  // Ictus times known only to the camera frame they fall on (83 ms at 12 fps).
+  const run = (bpm: number, frameMs: number, beats = 20) => {
+    const e = new TempoEstimator(cfg)
+    const iv = 60000 / bpm
+    let last = null as number | null
+    for (let i = 0; i < beats; i++) {
+      const t = Math.round((i * iv) / frameMs) * frameMs
+      const r = e.addBeat({ tMs: t, skipped: 0 })
+      if (r) last = r.state.bpm
+    }
+    return last!
+  }
+  it.each([55, 70, 85, 100, 115, 130])('reads %i BPM within 1.2 BPM from 12-fps beat times (a median of single intervals sat 2–3 BPM off)', (bpm) => {
+    expect(Math.abs(run(bpm, 83.3) - bpm)).toBeLessThan(1.2)
+  })
+  it('is exact for exact beat times', () => {
+    expect(run(90, 1)).toBeCloseTo(90, 0)
+  })
+  it('a single badly mistimed beat does not move the tempo by more than a BPM or so', () => {
+    const e = new TempoEstimator(cfg)
+    const iv = 666.7
+    let before = 0
+    let after = 0
+    for (let i = 0; i < 14; i++) {
+      const t = i * iv + (i === 9 ? 180 : 0)
+      const r = e.addBeat({ tMs: t, skipped: 0 })
+      if (i === 7 && r) before = r.state.bpm
+      if (i === 13 && r) after = r.state.bpm
+    }
+    expect(Math.abs(after - before)).toBeLessThan(2)
+  })
+})

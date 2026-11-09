@@ -48,6 +48,8 @@ interface Active {
   maxMs: number
   /** First moment the heading began to diverge from `dir` (start of a corner); reset if it swings back. */
   onset: { pos: V2; ms: number } | null
+  /** Progress along the heading at each sample, so the ictus time can be interpolated between frames. */
+  trace: { t: number; p: number }[]
 }
 
 const MIN_DIR_DISTANCE = 0.3 // hand sizes of travel after which the stroke's reference direction is fixed
@@ -96,6 +98,7 @@ export class StrokeSegmenter {
       st.locked = true
     }
     const proj = dot(disp, st.dir)
+    if (st.trace.length < 400) st.trace.push({ t: sample.tMs, p: proj })
     if (proj > st.maxProj) {
       st.maxProj = proj
       st.maxPos = sample.pos
@@ -115,7 +118,7 @@ export class StrokeSegmenter {
         st.maxPos = st.onset.pos
         st.maxMs = st.onset.ms
       }
-      const done = this.finish(sample.tMs, 'corner')
+      const done = this.finish(sample.tMs, 'corner', !st.onset)
       this.begin(done.ictusPos, done.candidate.ictusMs, unit(sample.vel), speed)
       return done.candidate
     }
@@ -139,11 +142,28 @@ export class StrokeSegmenter {
   }
 
   private begin(pos: V2, tMs: number, dir: V2, speed: number) {
-    this.s = { locked: false, startPos: pos, startMs: tMs, dir, peak: speed, maxProj: 0, maxPos: pos, maxMs: tMs, onset: null }
+    this.s = { locked: false, startPos: pos, startMs: tMs, dir, peak: speed, maxProj: 0, maxPos: pos, maxMs: tMs, onset: null, trace: [] }
   }
 
-  private finish(detectedMs: number, endedBy: StrokeCandidate['endedBy']) {
+  /**
+   * The ictus is only known to the frame it falls on (a 33–90 ms grid), which would quantise every beat interval. The three
+   * samples around the peak of progress give a parabola whose vertex is the ictus to a fraction of a frame.
+   */
+  private refineMs(st: Active): number {
+    const i = st.trace.findIndex((x) => x.t === st.maxMs)
+    if (i <= 0 || i >= st.trace.length - 1) return st.maxMs
+    const a = st.trace[i - 1]
+    const b = st.trace[i]
+    const c = st.trace[i + 1]
+    const denom = a.p - 2 * b.p + c.p
+    if (denom >= -1e-9) return st.maxMs // not a clear peak
+    const delta = Math.max(-0.5, Math.min(0.5, (0.5 * (a.p - c.p)) / denom))
+    return b.t + delta * (delta >= 0 ? c.t - b.t : b.t - a.t)
+  }
+
+  private finish(detectedMs: number, endedBy: StrokeCandidate['endedBy'], refine = true) {
     const st = this.s!
+    if (refine) st.maxMs = this.refineMs(st)
     this.s = null
     const d = sub(st.maxPos, st.startPos)
     return {
