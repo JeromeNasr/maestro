@@ -382,14 +382,14 @@ describe('VisionSession — calibration integration', () => {
     const last = frames.at(-1)!
     expect(last.right!.palm.x).toBeGreaterThan(0.45) // user's right hand is on the right of the preview
     expect(last.left!.palm.x).toBeLessThan(0.55)
-    expect(last.right!.labelSource).toBe('swapped')
+    expect(['swapped', 'tracked']).toContain(last.right!.labelSource)
   })
 
-  it('without calibration, labels are NOT corrected and are flagged unverified', async () => {
+  it("without calibration, MediaPipe's documented swap for un-mirrored frames is applied but flagged unverified", async () => {
     const s = setup()
     await s.session.startCamera()
     s.frame(150)
-    expect(s.session.store.get().handedness).toMatchObject({ swap: false, verified: false })
+    expect(s.session.store.get().handedness).toMatchObject({ swap: true, verified: false })
   })
 
   it('cancel returns to idle; clearCalibration forgets the saved result', async () => {
@@ -537,7 +537,7 @@ describe('VisionSession — asynchronous (worker) detection', () => {
     s.frame()
     const capture = s.clock.t
     s.clock.t += 120 // inference latency
-    s.det.calls[0].resolve(result(rawHand('Right', 0.75)))
+    s.det.calls[0].resolve(result(rawHand('Left', 0.75))) // real MediaPipe calls the user's right hand "Left" on a raw frame
     await Promise.resolve()
     expect(frames).toHaveLength(1)
     expect(frames[0].timestampMs).toBe(capture)

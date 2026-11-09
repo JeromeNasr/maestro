@@ -21,10 +21,13 @@ describe('DemoSource (synthetic)', () => {
 
   it('places the right hand on the right of the mirrored preview (raw x is flipped)', () => {
     const r = demo.detect(1000)
-    const right = r.hands.find((h) => h.label === 'Right')!
-    const left = r.hands.find((h) => h.label === 'Left')!
-    expect(1 - right.landmarks[9].x).toBeGreaterThan(0.5)
-    expect(1 - left.landmarks[9].x).toBeLessThan(0.5)
+    const onRight = r.hands.find((h) => 1 - h.landmarks[9].x > 0.5)!
+    const onLeft = r.hands.find((h) => 1 - h.landmarks[9].x < 0.5)!
+    expect(onRight).toBeDefined()
+    expect(onLeft).toBeDefined()
+    // Like real MediaPipe on an un-mirrored frame, the labels are inverted: the user's right hand is reported "Left".
+    expect(onRight.label).toBe('Left')
+    expect(onLeft.label).toBe('Right')
   })
 
   it('moves the right hand through a down-first conducting pattern', () => {
@@ -41,13 +44,13 @@ describe('DemoSource (synthetic)', () => {
   })
 
   it('briefly drops the right hand to demonstrate loss handling', () => {
-    expect(demo.detect(6050).hands.map((h) => h.label)).toEqual(['Left'])
-    expect(demo.detect(13500).hands.map((h) => h.label)).toEqual(['Left'])
+    expect(demo.detect(6050).hands.map((h) => h.label)).toEqual(['Right']) // only the user's left hand remains (reported inverted)
+    expect(demo.detect(13500).hands.map((h) => h.label)).toEqual(['Right'])
     expect(demo.detect(20050).hands).toHaveLength(2)
   })
 
   it('runs through the real pipeline: a short dropout is held, a long one is lost, then recovered', () => {
-    const p = new HandPipeline({ getConfig: () => DEFAULT_GESTURE_CONFIG, getHandedness: () => ({ swap: false, verified: true, origin: 'demo' }) })
+    const p = new HandPipeline({ getConfig: () => DEFAULT_GESTURE_CONFIG, getHandedness: () => ({ swap: true, verified: true, origin: 'demo' }) })
     const at = (ms: number) => p.process(demo.detect(ms), ms, 'demo')
     for (let t = 0; t < 5990; t += 33) at(t)
     expect(at(5990).right!.status).toBe('tracking')
