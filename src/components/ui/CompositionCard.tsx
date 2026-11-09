@@ -7,51 +7,48 @@ interface Props {
   composition: Composition
   selected?: boolean
   onSelect?: (id: string) => void
+  /** Position in the programme, shown as a numeral. */
+  number?: number
 }
 
-export function CompositionCard({ composition: c, selected = false, onSelect }: Props) {
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII']
+
+/** One entry of the programme, laid out like a line in a printed concert programme rather than a product card. */
+export function CompositionCard({ composition: c, selected = false, onSelect, number }: Props) {
   const available = c.status === 'available'
   return (
     <article
-      className={`panel flex flex-col overflow-hidden transition-colors ${selected ? 'border-gold/70' : 'hover:border-ivory/25'}`}
+      className={`group grid gap-x-8 gap-y-4 border-t py-8 transition-colors sm:grid-cols-[6rem_1fr] lg:grid-cols-[6rem_11rem_1fr_auto] ${selected ? 'border-gold/70' : 'border-ivory/10'}`}
       aria-label={c.title}
     >
-      <div className={`aspect-[16/9] border-b hairline ${available ? '' : 'opacity-60'}`}>
+      <p className="hidden font-serif text-5xl italic leading-none text-gold-deep sm:block" aria-hidden="true">{number ? ROMAN[number - 1] : ''}</p>
+      <div className={`hidden aspect-[16/9] overflow-hidden border hairline lg:block ${available ? '' : 'opacity-50 grayscale'}`}>
         <CompositionArt art={c.art} />
       </div>
-      <div className="flex flex-1 flex-col p-5">
+      <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <StatusTag kind={available ? 'measured' : 'neutral'}>{available ? 'Available' : 'Coming later'}</StatusTag>
-          {available && <StatusTag kind="demo">Original · CC0</StatusTag>}
+          <p className="smallcaps text-sm text-gold-soft">{c.composer}</p>
+          {available ? <StatusTag kind="demo">Original · CC0</StatusTag> : <StatusTag kind="neutral">Coming later</StatusTag>}
         </div>
-        <h3 className="mt-3 text-2xl leading-snug">{c.title}</h3>
-        <p className="text-sm text-gold-soft">{c.composer}</p>
-        <p className="mt-3 flex-1 text-sm leading-relaxed text-ivory-dim">{c.description}</p>
-        {!available && c.pendingReason && <p className="mt-3 text-xs text-ivory-mute">{c.pendingReason}</p>}
-        <dl className="mt-4 grid grid-cols-4 gap-2 border-t hairline pt-4 text-xs">
-          {[
-            ['Period', c.period],
-            ['Meter', c.timeSignature],
-            ['Level', c.difficulty],
-            ['Length', formatDuration(c.durationSec)],
-          ].map(([k, v]) => (
-            <div key={k}>
-              <dt className="text-ivory-mute">{k}</dt>
-              <dd className="mt-0.5 text-ivory">{v}</dd>
-            </div>
-          ))}
-        </dl>
-        {onSelect && (
+        <h3 className="mt-1 text-3xl leading-tight">{c.title}</h3>
+        <p className="mt-3 max-w-xl text-sm leading-relaxed text-ivory-dim">{c.description}</p>
+        {!available && c.pendingReason && <p className="mt-3 max-w-xl text-xs text-ivory-mute">{c.pendingReason}</p>}
+        <p className="mt-4 text-xs text-ivory-mute">
+          {c.period} · {c.timeSignature} · {c.difficulty} · {formatDuration(c.durationSec)}
+        </p>
+      </div>
+      {onSelect && (
+        <div className="sm:col-start-2 lg:col-start-4 lg:self-center">
           <button
-            className={`btn mt-5 ${available && !selected ? 'btn-gold' : 'btn-ghost'}`}
+            className={`btn whitespace-nowrap ${available && !selected ? 'btn-gold' : 'btn-ghost'}`}
             disabled={!available}
             aria-pressed={selected}
             onClick={() => onSelect(c.id)}
           >
             {!available ? 'Not yet available' : selected ? 'Selected' : 'Select for studio'}
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </article>
   )
 }

@@ -4,6 +4,7 @@ import { Layout } from './Layout'
 import { Landing } from '@/pages/Landing'
 import { Library } from '@/pages/Library'
 import { Academy } from '@/pages/Academy'
+import { Orchestra } from '@/pages/Orchestra'
 import { Analytics } from '@/pages/Analytics'
 import { NotFound } from '@/pages/NotFound'
 import { PageLoading, RouteError } from './RouteFallbacks'
@@ -19,6 +20,7 @@ export const routes: RouteObject[] = [
       { path: 'library', element: <Library /> },
       { path: 'studio', lazy: async () => ({ Component: (await import('@/pages/Studio')).Studio }) },
       { path: 'academy', element: <Academy /> },
+      { path: 'orchestra', element: <Orchestra /> },
       { path: 'analytics', element: <Analytics /> },
       { path: '*', element: <NotFound /> },
     ],

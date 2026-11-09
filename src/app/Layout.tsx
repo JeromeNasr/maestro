@@ -6,6 +6,7 @@ const NAV = [
   { to: '/library', label: 'Library' },
   { to: '/studio', label: 'Studio' },
   { to: '/academy', label: 'Academy' },
+  { to: '/orchestra', label: 'Orchestra' },
   { to: '/analytics', label: 'Analytics' },
 ]
 
@@ -14,6 +15,7 @@ const TITLES: Record<string, string> = {
   '/library': 'Library',
   '/studio': 'Conducting Studio',
   '/academy': 'Conducting Academy',
+  '/orchestra': 'The Orchestra',
   '/analytics': 'Analytics',
 }
 

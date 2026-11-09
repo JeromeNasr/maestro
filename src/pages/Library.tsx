@@ -16,7 +16,7 @@ export function Library() {
       <p className="eyebrow">Composition library</p>
       <h1 className="mt-3 text-5xl">Choose your repertoire</h1>
       <p className="mt-4 max-w-2xl text-ivory-dim">
-        Pieces become selectable only once their MIDI arrangement has a verified licence. Others are listed so you can see what is planned.
+        A piece goes on the programme only once its MIDI arrangement has a licence we have checked. The rest are listed so you can see what is coming.
       </p>
 
       <div className="mt-10 flex flex-col gap-4 border-y hairline py-5 sm:flex-row sm:items-center sm:justify-between">
@@ -45,9 +45,9 @@ export function Library() {
       {results.length === 0 ? (
         <p className="py-20 text-center text-ivory-dim">No compositions match “{query}”.</p>
       ) : (
-        <div className="mt-4 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {results.map((c) => (
-            <CompositionCard key={c.id} composition={c} selected={c.id === selectedId} onSelect={selectComposition} />
+        <div className="mt-4 border-b hairline">
+          {results.map((c, i) => (
+            <CompositionCard key={c.id} number={i + 1} composition={c} selected={c.id === selectedId} onSelect={selectComposition} />
           ))}
         </div>
       )}

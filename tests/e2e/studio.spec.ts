@@ -38,7 +38,7 @@ test('all five pages load and navigation works (desktop and mobile widths)', asy
   for (const vp of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(vp)
     await page.goto('/')
-    for (const [label, path, h1] of [['Library', '/library', /choose your repertoire/i], ['Studio', '/studio', /aurora/i], ['Academy', '/academy', /learn the language/i], ['Analytics', '/analytics', /your performances/i]] as const) {
+    for (const [label, path, h1] of [['Library', '/library', /choose your repertoire/i], ['Studio', '/studio', /aurora/i], ['Academy', '/academy', /learn the language/i], ['Orchestra', '/orchestra', /who is in the orchestra/i], ['Analytics', '/analytics', /your performances/i]] as const) {
       if (vp.width < 768) await page.getByRole('button', { name: /menu/i }).click()
       await page.getByRole('navigation', { name: vp.width < 768 ? 'Mobile' : 'Primary' }).getByRole('link', { name: label }).click()
       await expect(page).toHaveURL(new RegExp(`${path}$`))

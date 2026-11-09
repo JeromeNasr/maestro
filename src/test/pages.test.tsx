@@ -19,10 +19,11 @@ function renderAt(path: string) {
 
 describe('routing & navigation', () => {
   it.each([
-    ['/', /conduct your/i],
+    ['/', /pick up the baton/i],
     ['/library', /choose your repertoire/i],
     ['/studio', /aurora/i],
     ['/academy', /learn the language/i],
+    ['/orchestra', /who is in the orchestra/i],
     ['/analytics', /your performances/i],
     ['/missing', /out of tempo/i],
   ])('renders %s', async (path, heading) => {
@@ -33,7 +34,7 @@ describe('routing & navigation', () => {
   it('exposes the primary navigation', () => {
     renderAt('/')
     const nav = screen.getByRole('navigation', { name: 'Primary' })
-    for (const l of ['Library', 'Studio', 'Academy', 'Analytics']) expect(within(nav).getByRole('link', { name: l })).toBeInTheDocument()
+    for (const l of ['Library', 'Studio', 'Academy', 'Orchestra', 'Analytics']) expect(within(nav).getByRole('link', { name: l })).toBeInTheDocument()
   })
 })
 
