@@ -35,14 +35,3 @@ Use Chromium or Chrome, `npm run build && npm run preview`, open http://localhos
 18. **Audio.** Check loudness at master max (no clipping), instrument distinctness, no clicks on start/pause/stop.
 
 Please record: browser/version, GPU/CPU delegate, FPS, handedness result, and any missed or false beats with your approximate BPM.
-
-## 3. Added in the tracking / orchestra upgrade
-Automated (all synthetic or fake-device — none of this is a physical-webcam result):
-* `src/vision/handIdentity.test.ts`: right-only, left-only, both hands, MediaPipe-style inverted labels, 25–50 % label flicker, crossing hands with unreliable labels, short loss and return, edge exit/return, third hand, wrong default mapping (online learning), end-to-end conducting through the real pipeline.
-* `src/gesture/gestureEngine.test.ts`: small-gesture adoption, tremor floor, false-positive guard.
-* `src/audio/sampledBackend.test.ts`, `sampleBank.test.ts`, `instruments.test.ts`, `orchestraBackend.test.ts`: routing, re-pitching maths, loop parameters, voice release/cancel, load progress, fallback.
-* `src/library/classics.test.ts`: every shipped classic parses, matches its provenance record, opens with the right notes (Beethoven G-G-G-E♭, Brandenburg horn fanfare, Spring theme, Nachtmusik figure), stays within each instrument's range, and follows tempo changes without changing pitch.
-* `tests/e2e/audio.spec.ts`, `audio-perf.spec.ts`: real Chromium Web Audio — samples load (not the fallback), only same-origin audio requests, output peak ≤ 0.99 at maximum master/fortissimo, timpani audible, measured frame pacing and long tasks for samples vs synth.
-
-Still needs a physical webcam (see section 2): right-hand identification with a real MediaPipe model (is the default `swap = true` right on your browser?), crossing hands, lighting changes, small-gesture adoption, a baton in the hand, and the real feel of latency.
-Still needs ears: the instrument balance, the quality of the sustain loops, timpani tuning (derived by analysis, not by listening), the horn's register gap.

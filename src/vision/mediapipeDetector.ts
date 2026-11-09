@@ -1,14 +1,8 @@
 import type { HandLandmarker } from '@mediapipe/tasks-vision'
 import { resolveAssets, type AssetLocation } from './assetLoader'
-import { confidenceTriplet } from './detectorProtocol'
 import type { DetectorFactory, DetectorOptions, HandDetector } from './detector'
 import { WorkerHandDetector, withFallback } from './workerDetector'
 import type { DetectionResult, ReportedLabel } from './types'
-
-const mpOptions = (c: number) => {
-  const t = confidenceTriplet(c)
-  return { minHandDetectionConfidence: t.detection, minHandPresenceConfidence: t.presence, minTrackingConfidence: t.tracking }
-}
 
 /** Real detector backed by MediaPipe Hand Landmarker. Loaded lazily so the library stays out of the initial bundle. */
 export class MediaPipeHandDetector implements HandDetector {
@@ -27,7 +21,9 @@ export class MediaPipeHandDetector implements HandDetector {
         baseOptions: { modelAssetPath: assets.modelUrl, delegate },
         runningMode: 'VIDEO',
         numHands: 2,
-        ...mpOptions(opts.minConfidence),
+        minHandDetectionConfidence: opts.minConfidence,
+        minHandPresenceConfidence: opts.minConfidence,
+        minTrackingConfidence: opts.minConfidence,
       })
     if (opts.delegate === 'CPU') return new MediaPipeHandDetector(await make('CPU'), 'CPU', assets.origin)
     try {
@@ -50,7 +46,7 @@ export class MediaPipeHandDetector implements HandDetector {
   }
 
   setMinConfidence(c: number) {
-    void this.landmarker.setOptions(mpOptions(c))
+    void this.landmarker.setOptions({ minHandDetectionConfidence: c, minHandPresenceConfidence: c, minTrackingConfidence: c })
   }
 
   close() {

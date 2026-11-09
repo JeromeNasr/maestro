@@ -4,16 +4,11 @@
  * the main thread is what keeps the UI and the audio scheduler responsive (measured: see CLAUDE.md).
  */
 import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision'
-import { confidenceTriplet, isAllowedUrl, type FromWorker, type ToWorker } from './detectorProtocol'
+import { isAllowedUrl, type FromWorker, type ToWorker } from './detectorProtocol'
 import type { ReportedLabel } from './types'
 
 type Scope = { postMessage(m: FromWorker): void; onmessage: ((e: MessageEvent<ToWorker>) => void) | null; location: Location; fetch: typeof fetch; XMLHttpRequest: typeof XMLHttpRequest; navigator: Navigator }
 const scope = self as unknown as Scope
-
-const mpConfidence = (c: number) => {
-  const t = confidenceTriplet(c)
-  return { minHandDetectionConfidence: t.detection, minHandPresenceConfidence: t.presence, minTrackingConfidence: t.tracking }
-}
 
 let landmarker: HandLandmarker | null = null
 let allowed: string[] = []
@@ -42,7 +37,7 @@ async function init(m: Extract<ToWorker, { type: 'init' }>) {
   const make = (delegate: 'GPU' | 'CPU') =>
     HandLandmarker.createFromOptions(fileset, {
       baseOptions: { modelAssetPath: m.assets.modelUrl, delegate }, runningMode: 'VIDEO', numHands: 2,
-      ...mpConfidence(m.minConfidence),
+      minHandDetectionConfidence: m.minConfidence, minHandPresenceConfidence: m.minConfidence, minTrackingConfidence: m.minConfidence,
     })
   let delegate: 'GPU' | 'CPU' = 'CPU'
   if (m.delegate === 'CPU') landmarker = await make('CPU')
@@ -71,7 +66,7 @@ scope.onmessage = async (e) => {
       })
       scope.postMessage({ type: 'result', id: m.id, result: { hands } })
     } else if (m.type === 'setMinConfidence') {
-      void landmarker?.setOptions(mpConfidence(m.value))
+      void landmarker?.setOptions({ minHandDetectionConfidence: m.value, minHandPresenceConfidence: m.value, minTrackingConfidence: m.value })
     } else if (m.type === 'close') {
       landmarker?.close()
       landmarker = null

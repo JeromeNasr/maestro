@@ -236,13 +236,13 @@ test('real camera pipeline (Chromium fake device): the camera is released on Sto
 
 test('Academy: a quiz is scored and persisted across a reload; tap-tempo is judged from real taps', async ({ page }) => {
   await page.goto('/academy')
-  await expect(page.getByTestId('course-progress')).toContainText('0 of 14')
+  await expect(page.getByTestId('course-progress')).toContainText('0 of 11')
   await page.getByRole('button', { name: 'Mark as read' }).click()
   for (const q of ['The right hand', 'At the ictus, where the stroke changes direction', 'A gesture before the first note showing tempo and character']) await page.getByRole('radio', { name: q }).check()
   await page.getByRole('button', { name: 'Check answers' }).click()
   await expect(page.getByTestId('quiz-result')).toContainText('3 of 3 correct')
   await page.reload()
-  await expect(page.getByTestId('course-progress')).toContainText('1 of 14')
+  await expect(page.getByTestId('course-progress')).toContainText('1 of 11')
 
   await page.getByRole('button', { name: /Tempo control/ }).click()
   const pad = page.getByRole('button', { name: 'Tap' })

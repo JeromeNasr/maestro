@@ -3,13 +3,10 @@ import { courseProgress, lessonStatus } from '@/academy/completion'
 import { LESSONS, type DemoKind, type ExerciseDef } from '@/academy/lessons'
 import { academyProgress, getLessonProgress, markRead, resetAcademyProgress } from '@/academy/progress'
 import { CameraExercise } from '@/components/academy/CameraExercise'
-import { ArticulationDemo } from '@/components/academy/ArticulationDemo'
-import { BatonGripDemo } from '@/components/academy/BatonGripDemo'
 import { DynamicsDemo } from '@/components/academy/DynamicsDemo'
 import { FrameGuide } from '@/components/academy/FrameGuide'
 import { PatternDemo } from '@/components/academy/PatternDemo'
 import { Quiz } from '@/components/academy/Quiz'
-import { StageDemo } from '@/components/academy/StageDemo'
 import { TapTempoExercise } from '@/components/academy/TapTempoExercise'
 import { StatusTag } from '@/components/ui/StatusTag'
 import type { TimeSignature } from '@/config/gestureConfig'
@@ -19,9 +16,6 @@ function Demo({ kind }: { kind: DemoKind }) {
   if (kind.startsWith('pattern-')) return <PatternDemo key={kind} timeSignature={kind.slice(8) as TimeSignature} />
   if (kind === 'tempo') return <PatternDemo key="tempo" timeSignature="4/4" />
   if (kind === 'frame') return <FrameGuide />
-  if (kind === 'baton-grip') return <BatonGripDemo />
-  if (kind === 'baton-articulation') return <ArticulationDemo />
-  if (kind === 'stage') return <StageDemo />
   return <DynamicsDemo />
 }
 

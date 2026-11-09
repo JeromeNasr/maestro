@@ -1,6 +1,6 @@
 import type { TimeSignature } from '@/config/gestureConfig'
 
-export type DemoKind = 'pattern-2/4' | 'pattern-3/4' | 'pattern-4/4' | 'dynamics' | 'tempo' | 'frame' | 'baton-grip' | 'baton-articulation' | 'stage'
+export type DemoKind = 'pattern-2/4' | 'pattern-3/4' | 'pattern-4/4' | 'dynamics' | 'tempo' | 'frame'
 
 export interface QuizQuestion {
   id: string
@@ -56,24 +56,6 @@ export const LESSONS: Lesson[] = [
       { id: 'q1', prompt: 'Which hand sets the tempo in MAESTRO?', options: ['The left hand', 'The right hand', 'Both hands equally', 'Neither — tempo is fixed'], answer: 1, explanation: 'The right hand keeps time; the left hand is for dynamics.' },
       { id: 'q2', prompt: 'Where is a beat felt?', options: ['At the start of a stroke', 'At the fastest point of a stroke', 'At the ictus, where the stroke changes direction', 'At the top of the pattern only'], answer: 2, explanation: 'The ictus is the point of rebound where the beat lands.' },
       { id: 'q3', prompt: 'What is a preparation?', options: ['Tuning the orchestra', 'A gesture before the first note showing tempo and character', 'The last beat of a piece', 'A mistake'], answer: 1, explanation: 'The preparation tells the players when and how to begin.' },
-    ],
-    exercises: [],
-  },
-  {
-    id: 'baton',
-    title: 'The baton: what, why, how to hold it',
-    summary: 'A light stick that makes the beat visible from the back of the hall.',
-    body: [
-      'A conducting baton is a light stick, usually about 30–40 cm (12–16 in) long, held in the right hand. Its job is visibility: it extends the line of the arm, so the tip — the point everyone watches — is seen clearly even from the back of a large orchestra. The beat is the instant the tip changes direction: the ictus.',
-      'Conductors use one because a hand alone is small and its fingers blur at a distance, and because a stick of constant length makes the path of the beat precise. It is a tool, not a rule: choral conductors often use bare hands, and some orchestral conductors put the baton down for lyrical passages.',
-      'Hold it loosely. The rounded handle rests against the palm; the thumb and the first two fingers pinch it lightly; the other fingers curl in; the wrist stays flexible; the baton continues the line of the forearm, pointing forward and slightly inward. Schools differ in the details — treat this as a common starting grip. MAESTRO follows your hand, so a baton in your hand works the same as a bare hand; it does not detect the baton itself.',
-    ],
-    points: ['Hold it like a small bird: firm enough not to drop, gentle enough not to hurt.', 'The tip carries the beat — keep it clear against the space in front of you.', 'A pencil or chopstick is fine for practice.', 'The wrist and fingers make small movements; the forearm makes big ones.'],
-    demo: 'baton-grip',
-    quiz: [
-      { id: 'q1', prompt: 'What is the baton’s main job?', options: ['To make a sound', 'To extend the line of the arm so the beat is visible to every player', 'To hit the music stand', 'To replace the right hand'], answer: 1, explanation: 'Visibility: the tip carries the beat to the whole orchestra.' },
-      { id: 'q2', prompt: 'Which grip is the usual starting point?', options: ['A tight fist around the whole stick', 'Handle in the palm, thumb and first two fingers pinching, others loose', 'Only the little finger', 'Held by both hands'], answer: 1, explanation: 'A loose pinch lets the tip rebound; a fist makes it stiff.' },
-      { id: 'q3', prompt: 'Does MAESTRO detect the tip of your baton?', options: ['Yes, it tracks the tip', 'No — it follows your hand, so a baton in the hand works but its tip is not tracked', 'Only in 3/4', 'Only with a red baton'], answer: 1, explanation: 'Hand tracking only. Reliable tip tracking would need real-camera testing that has not been done.' },
     ],
     exercises: [],
   },
@@ -173,24 +155,6 @@ export const LESSONS: Lesson[] = [
     ],
   },
   {
-    id: 'baton-technique',
-    title: 'Baton technique: preparation, rebound and character',
-    summary: 'How a stroke is built — and how its size and shape tell the orchestra how to play.',
-    body: [
-      'Every beat is a small arc. The stroke falls to the ictus, the baton rebounds like a ball, and the tip travels on toward the next beat. For smooth music the rebound is natural and the tip never stops; for short notes it is quick and the tip is still between beats.',
-      'Keep your strokes in one plane in front of the chest, roughly between waist and eye level, with the ictus points at the same height so the pulse is steady. Size and speed carry meaning: a bigger gesture asks for more sound and a broader style, a smaller one for less; a quicker, sharper stroke asks for shorter, more articulate notes.',
-      'Tempo is shown by the time between ictus points, and before the first note the preparation (the upbeat) shows the tempo, the loudness and the character together. The orchestra breathes with your preparation, so make it exactly what you want to hear.',
-    ],
-    points: ['The orchestra plays on the ictus, not the middle of the stroke.', 'Legato: continuous rounded curves. Staccato: quick drop, quick rebound, stillness. Marcato: weighted stop at the ictus.', 'Bigger gesture = louder or broader; smaller = softer.', 'Show the tempo in the preparation, then keep it.'],
-    demo: 'baton-articulation',
-    quiz: [
-      { id: 'q1', prompt: 'On which part of the stroke does the orchestra play?', options: ['The start of the stroke', 'The ictus, where the tip changes direction', 'The highest point', 'Wherever it is fastest'], answer: 1, explanation: 'The ictus is the beat.' },
-      { id: 'q2', prompt: 'Which gesture suggests legato?', options: ['Continuous rounded curves without a stop', 'A sharp stop at every beat', 'Standing still', 'Very small, jerky movements'], answer: 0, explanation: 'Connected, flowing strokes ask for connected notes.' },
-      { id: 'q3', prompt: 'What does a larger gesture usually communicate?', options: ['Quieter playing', 'Louder, broader playing', 'A slower piece', 'Nothing'], answer: 1, explanation: 'Size is one of the strongest dynamic signals.' },
-    ],
-    exercises: [],
-  },
-  {
     id: 'tempo',
     title: 'Tempo control',
     summary: 'Faster hands, faster music — steadily.',
@@ -262,24 +226,6 @@ export const LESSONS: Lesson[] = [
       { id: 'q1', prompt: 'Which pose stops the music?', options: ['Both hands raised and held', 'Both hands lowered and held still', 'Waving', 'Closing your eyes'], answer: 1, explanation: 'Both hands lowered and held still.' },
       { id: 'q2', prompt: 'Why don’t cues trigger during normal conducting?', options: ['They are disabled while playing', 'They need both hands to be still for about a second', 'They need a loud noise', 'They only work on Tuesdays'], answer: 1, explanation: 'A moving conducting hand never satisfies the stillness hold.' },
       { id: 'q3', prompt: 'Which keyboard key stops the performance immediately?', options: ['Space', 'Enter', 'Esc', 'Tab'], answer: 2, explanation: 'Esc stops; Space pauses/resumes.' },
-    ],
-    exercises: [],
-  },
-  {
-    id: 'sections',
-    title: 'Communicating with the sections',
-    summary: 'Common pulse for everyone, then eyes, hands and cues for each family.',
-    body: [
-      'A full orchestra has four families and about twenty desks. A conductor does not beat separately for each one: the right hand gives the common pulse, and then the eyes, the left hand and the direction of the body address the sections. Look at a section a bar before it enters, give a preparation in the character of its entrance, and the players will know what you want.',
-      'To begin, a conductor looks at the whole orchestra, raises both hands, breathes with the music and gives the preparatory upbeat; the next stroke is the downbeat. To end, the cut-off is a clear, deliberate gesture that stops at the exact moment the sound should end — then stillness. In MAESTRO the start and stop poses are two hands raised or lowered and held still (see Starting and stopping).',
-      'Different families need different things. Strings follow the length and weight of the stroke; woodwinds need to see the breath; brass need a larger, earlier preparation and sometimes a restraining left hand; percussion need an extremely clear ictus. Click the families below to see how conductors usually approach each one.',
-    ],
-    points: ['Cue a section a beat or a bar early, with eye contact.', 'The preparation shows tempo, loudness and character.', 'Brass: early and big; woodwinds: show the breath; strings: show the bow; percussion: be exact.', 'After a cut-off, stay still.'],
-    demo: 'stage',
-    quiz: [
-      { id: 'q1', prompt: 'When should you cue a section’s entrance?', options: ['After it has already started', 'Slightly before, with eye contact and a preparation', 'Never; they know the music', 'Only with a loud noise'], answer: 1, explanation: 'The players need the preparation to start together.' },
-      { id: 'q2', prompt: 'Which families usually sit at the back of the orchestra?', options: ['Strings', 'Brass and percussion', 'Only the conductor', 'Woodwinds only'], answer: 1, explanation: 'Brass and percussion are normally behind the woodwinds.' },
-      { id: 'q3', prompt: 'What ends a note at the right moment?', options: ['A cut-off gesture', 'A louder beat', 'A faster tempo', 'Looking away'], answer: 0, explanation: 'The cut-off stops exactly where the sound should end.' },
     ],
     exercises: [],
   },

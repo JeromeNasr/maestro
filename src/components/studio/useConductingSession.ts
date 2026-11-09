@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { OrchestraBackend } from '@/audio/orchestraBackend'
+import { ToneBackend } from '@/audio/toneBackend'
 import type { AudioSnapshot } from '@/audio/engine'
 import type { MixerState } from '@/audio/mixer'
 import { ConductingSession, type StudioSnapshot } from '@/conducting/conductingSession'
@@ -13,7 +13,7 @@ import type { VisionSnapshot } from '@/vision/visionSession'
  * camera, detector, audio graph, timers and listeners. Creating the session touches neither camera nor audio.
  */
 export function useConductingSession(): ConductingSession {
-  const [session] = useState(() => new ConductingSession({ createDetector: createMediaPipeDetector, createBackend: () => new OrchestraBackend() }))
+  const [session] = useState(() => new ConductingSession({ createDetector: createMediaPipeDetector, createBackend: () => new ToneBackend() }))
   useEffect(() => {
     session.activate()
     return () => session.deactivate()

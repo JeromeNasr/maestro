@@ -3,7 +3,6 @@ import { GestureEngine } from '@/gesture/gestureEngine'
 import type { CalibrationProfile } from '@/vision/calibration'
 import { DemoSource, type DemoOptions } from '@/vision/demoSource'
 import { HandPipeline } from '@/vision/handPipeline'
-import type { HandednessResolution } from '@/vision/handedness'
 import type { ConductingEvent, GestureSnapshot } from '@/gesture/types'
 import type { TransportHint } from '@/gesture/cueDetector'
 
@@ -14,8 +13,6 @@ export interface SimOptions {
   fps?: number
   startMs?: number
   calibration?: CalibrationProfile | null
-  /** Handedness the pipeline is given. Default: verified swap (a calibrated camera that inverts labels like MediaPipe). */
-  handedness?: HandednessResolution
   transport?: TransportHint
   /** Called each frame before processing; lets a test change the source mid-run. */
   onFrame?: (tMs: number, src: DemoSource, engine: GestureEngine) => void
@@ -25,7 +22,6 @@ export interface SimResult {
   events: ConductingEvent[]
   snapshots: GestureSnapshot[]
   engine: GestureEngine
-  frames: import('@/vision/types').HandFrame[]
   beats: Extract<ConductingEvent, { type: 'beat' }>[]
   tempos: Extract<ConductingEvent, { type: 'tempo' }>[]
 }
@@ -38,8 +34,7 @@ export interface SimResult {
 export function simulate(o: SimOptions): SimResult {
   const config = { ...DEFAULT_GESTURE_CONFIG, ...o.config }
   const src = new DemoSource({ dropouts: false, ...o.demo })
-  const pipeline = new HandPipeline({ getConfig: () => config, getHandedness: () => o.handedness ?? { swap: true, verified: true, origin: 'demo' } })
-  const frames: import('@/vision/types').HandFrame[] = []
+  const pipeline = new HandPipeline({ getConfig: () => config, getHandedness: () => ({ swap: false, verified: true, origin: 'demo' }) })
   const engine = new GestureEngine({ getConfig: () => config, getCalibration: () => o.calibration ?? null })
   engine.setTimeSignature(o.demo?.timeSignature ?? config.timeSignature)
   engine.setTransport(o.transport ?? 'playing')
@@ -52,12 +47,11 @@ export function simulate(o: SimOptions): SimResult {
     const t = t0 + (i * 1000) / fps
     o.onFrame?.(t, src, engine)
     const frame = pipeline.process(src.detect(t - t0), t, 'demo')
-    frames.push(frame)
     events.push(...engine.process(frame))
     snapshots.push(engine.snapshot)
   }
   return {
-    events, snapshots, engine, frames,
+    events, snapshots, engine,
     beats: events.filter((e) => e.type === 'beat') as SimResult['beats'],
     tempos: events.filter((e) => e.type === 'tempo') as SimResult['tempos'],
   }

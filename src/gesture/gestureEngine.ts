@@ -48,8 +48,6 @@ export class GestureEngine {
   /** Consecutive accepted, in-order beats; an off-pattern stroke or a long gap breaks it. */
   private chain = 0
   private pendingTempo: { tMs: number; skipped: number }[] = []
-  /** The latest strokes of ANY size (accepted or not): evidence of a regular small gesture, see `adaptiveThresholds`. */
-  private recentStrokes: { amplitude: number; peakSpeed: number; ictusMs: number }[] = []
   /** Ictus times (and inferred gaps) of the current chain, for the regularity check. */
   private chainBeats: { tMs: number; skipped: number }[] = []
   private bar = 0
@@ -95,7 +93,6 @@ export class GestureEngine {
     this.chain = 0
     this.pendingTempo = []
     this.chainBeats = []
-    this.recentStrokes = []
     this.bar = 0
     this.state = 'no-hand'
     this.stats = emptyStats()
@@ -200,7 +197,8 @@ export class GestureEngine {
   private evaluate(s: StrokeCandidate, hand: TrackedHand, t: number, cfg: GestureConfig, events: ConductingEvent[]) {
     const b = cfg.beat
     const sens = Math.max(0.25, cfg.tracking.sensitivity)
-    const { minAmp, minPeak } = this.adaptiveThresholds(s, b.minAmplitude / sens, b.minPeakSpeed / sens)
+    const minAmp = b.minAmplitude / sens
+    const minPeak = b.minPeakSpeed / sens
     const reject = (reason: RejectReason) => {
       if (reason === 'too-soon') this.stats.tooSoon++
       else if (reason === 'off-pattern') {
@@ -276,33 +274,6 @@ export class GestureEngine {
     } else {
       this.pendingTempo.push({ tMs: s.ictusMs, skipped: decision.skipped })
     }
-  }
-
-  /**
-   * Small-gesture adaptation. The default thresholds suit a comfortable, orchestra-sized stroke; people with a small
-   * gesture (or a cramped space) would have most beats rejected as "too small". When the last few strokes are REGULAR —
-   * similar in size and evenly spaced in time, which random waving and tremor are not — the amplitude and speed
-   * thresholds relax to just below those strokes. A hard floor (30 % of the default) means that tremor, drifting
-   * and fidgeting can never qualify, and strokes that are larger than the default are unaffected.
-   */
-  private adaptiveThresholds(s: StrokeCandidate, minAmp: number, minPeak: number): { minAmp: number; minPeak: number } {
-    const r = this.recentStrokes
-    r.push({ amplitude: s.amplitude, peakSpeed: s.peakSpeed, ictusMs: s.ictusMs })
-    if (r.length > 6) r.shift()
-    const last = r.slice(-4)
-    if (last.length < 4) return { minAmp, minPeak }
-    const floor = 0.3 * minAmp
-    const amps = last.map((x) => x.amplitude)
-    const lo = Math.min(...amps)
-    const hi = Math.max(...amps)
-    if (lo < floor || hi / lo > 2.2) return { minAmp, minPeak }
-    const gaps = last.slice(1).map((x, i) => x.ictusMs - last[i].ictusMs)
-    const mean = gaps.reduce((a, g) => a + g, 0) / gaps.length
-    const cv = Math.sqrt(gaps.reduce((a, g) => a + (g - mean) ** 2, 0) / gaps.length) / mean
-    if (mean < this.deps.getConfig().beat.minBeatIntervalMs || mean > 2000 || cv > 0.35) return { minAmp, minPeak }
-    const relaxedAmp = Math.max(floor, Math.min(minAmp, 0.8 * lo))
-    const ratio = Math.max(0.35, Math.min(1, relaxedAmp / minAmp))
-    return { minAmp: relaxedAmp, minPeak: minPeak * ratio }
   }
 
   /** The last two beat intervals of the chain agree to within `maxRatio`. */

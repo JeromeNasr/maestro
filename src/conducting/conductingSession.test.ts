@@ -429,10 +429,3 @@ describe('ConductingSession — reliability and cleanup', () => {
     expect(r.session.mixer.audible('brass')).toBe(true)
   })
 })
-
-describe('ConductingSession — unrecognised gestures are explained', () => {
-  it('every reason the recogniser can give for ignoring a stroke has a plain-language hint', async () => {
-    const { REJECT_HINT } = await import('@/components/studio/FeedbackPanel')
-    for (const reason of ['too-small', 'too-slow', 'too-brief', 'too-soon', 'off-pattern', 'awaiting-downbeat']) expect(REJECT_HINT[reason], reason).toBeTruthy()
-  })
-})

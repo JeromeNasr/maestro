@@ -4,11 +4,9 @@ import type { LabelSource, ReportedLabel, Side, Vec2 } from './types'
 /**
  * How reported labels map to the user's hands.
  *
- * MediaPipe documents that handedness is computed assuming a MIRRORED (selfie) image and that applications feeding
- * an un-mirrored frame must swap the labels. MAESTRO feeds the detector the raw frame (display mirroring happens
- * afterwards), so the documented default is swap = true. That default is still only a default: it is marked
- * unverified, the identity tracker double-checks it online (two separated hands must agree with their position) and
- * calibration measures it against the mirrored preview.
+ * MediaPipe's documentation on handedness has been inconsistent over time (it depends on whether the image is
+ * mirrored), so MAESTRO never assumes. In 'auto' mode NO correction is applied until calibration has verified
+ * the labels against the mirrored preview (see calibration.ts).
  */
 export interface HandednessResolution {
   /** Swap reported Left↔Right. */
@@ -24,7 +22,7 @@ export function effectiveHandedness(mode: TrackingConfig['handednessMode'], cali
   if (mode === 'as-reported') return { swap: false, verified: true, origin: 'user-as-reported' }
   if (mode === 'swapped') return { swap: true, verified: true, origin: 'user-swapped' }
   if (calibrated) return { swap: calibrated.swap, verified: true, origin: 'calibration' }
-  return { swap: true, verified: false, origin: 'unverified-default' }
+  return { swap: false, verified: false, origin: 'unverified-default' }
 }
 
 export interface SideCandidate {

@@ -1,4 +1,4 @@
-import type { AssetLicense, Composition } from './types'
+import type { Composition } from './types'
 
 /**
  * Composition registry. Adding a piece = appending one entry (+ its MIDI file and licence record).
@@ -10,113 +10,13 @@ const ORIGINAL_LICENSE = {
   notes: 'Dedication to the public domain must be confirmed by the project owner (the music was written with AI assistance).',
 } as const
 
-const MUTOPIA = 'https://github.com/MutopiaProject/MutopiaProject'
-const MUTOPIA_COMMIT = '2144afd6f52d56c5b6995b8b589ef1268b3139f0'
-/** Classics are rendered from Mutopia Project LilyPond sources by scripts/music/build-classics.mjs; full provenance in public/midi/classics.json. */
-const mutopia = (path: string, license: string, maintainer: string, edition: string, extra?: Partial<AssetLicense>): AssetLicense => ({
-  license,
-  source: `Mutopia Project (${MUTOPIA} @ ${MUTOPIA_COMMIT.slice(0, 7)}, ${path}); edition: ${edition}`,
-  attribution: `Typeset by ${maintainer} for the Mutopia Project. Rendered to MIDI for MAESTRO.`,
-  ...extra,
-})
-
-const PLANNED_NO_SOURCE = (what: string) => `${what} is not in the Mutopia Project source tree this library is built from, and no other source with a verifiable licence could be reached from the build environment (IMSLP, Wikimedia Commons and MuseScore are blocked there). Unverified arrangements are never shipped.`
+const PLANNED_REASON = 'No verified-licence arrangement is included. The build environment could not reach sources such as Mutopia or Wikimedia Commons to verify a licence, and unverified arrangements are never shipped.'
 
 /**
  * Composition registry. Adding a piece = appending one entry (+ its MIDI file and a licence record in LICENSES.md).
  * Rule: a piece may only be 'available' once its MIDI arrangement has a documented, verified licence.
  */
 export const COMPOSITIONS: Composition[] = [
-  {
-    id: 'beethoven-symphony-5-i',
-    title: 'Symphony No. 5 — I. Allegro con brio',
-    composer: 'Ludwig van Beethoven',
-    period: 'Classical',
-    durationSec: 422.1,
-    timeSignature: '2/4',
-    conductingOptions: ['2/4'],
-    difficulty: 'Advanced',
-    description: 'The most famous four notes in music, then a full symphonic movement: woodwinds, horns, trumpets, timpani and strings. A fast two with sharp attacks and dramatic dynamic contrast — and a rest before the famous opening, so the first beat is yours to give.',
-    status: 'available',
-    midiUrl: '/midi/beethoven-symphony-5-i.mid',
-    midiLicense: mutopia('ftp/BeethovenLv/O67/Symphony5_1', 'Public Domain', 'Stelios Samelis (adapted to LilyPond 2.16 by Johannes Heinecke)', 'Breitkopf & Härtel, 1862–1865', {
-      notes: 'Reference tempo ♩ = 144 is an editorial choice; the typeset file has no usable tempo. The exposition repeat is played. Double basses sound an octave below written pitch.',
-      licenseUrl: 'https://creativecommons.org/licenses/publicdomain/',
-    }),
-    art: { hue: 'gold', motif: 'rings' },
-  },
-  {
-    id: 'mozart-nachtmusik-i',
-    title: 'Eine kleine Nachtmusik — I. Allegro',
-    composer: 'Wolfgang Amadeus Mozart',
-    period: 'Classical',
-    durationSec: 248.6,
-    timeSignature: '4/4',
-    conductingOptions: ['4/4', '2/4'],
-    difficulty: 'Intermediate',
-    description: 'Mozart’s serenade for strings (K. 525): the rocket-theme opening, graceful answers and crisp staccato. Clear four-beat patterns; conduct it in two for a lighter, quicker feel.',
-    status: 'available',
-    midiUrl: '/midi/mozart-nachtmusik-i.mid',
-    midiLicense: mutopia('ftp/MozartWA/KV525/MozartWA-KV525', 'Public Domain', 'Mike Blackstock', 'Breitkopf & Härtel, 1883', {
-      notes: 'Double basses double the cellos an octave below (the score writes cello and double bass on one staff). Dynamics are the typesetter’s MIDI velocities.',
-      licenseUrl: 'https://creativecommons.org/licenses/publicdomain/',
-    }),
-    art: { hue: 'ivory', motif: 'staff' },
-  },
-  {
-    id: 'mozart-nachtmusik-ii',
-    title: 'Eine kleine Nachtmusik — II. Romanze (Andante)',
-    composer: 'Wolfgang Amadeus Mozart',
-    period: 'Classical',
-    durationSec: 243.8,
-    timeSignature: '4/4',
-    conductingOptions: ['4/4'],
-    difficulty: 'Beginner',
-    description: 'A slow, singing movement in four: ideal for practising smooth, connected strokes and gentle dynamics with the left hand.',
-    status: 'available',
-    midiUrl: '/midi/mozart-nachtmusik-ii.mid',
-    midiLicense: mutopia('ftp/MozartWA/KV525/MozartWA-KV525', 'Public Domain', 'Mike Blackstock', 'Breitkopf & Härtel, 1883', {
-      notes: 'Double basses double the cellos an octave below.',
-      licenseUrl: 'https://creativecommons.org/licenses/publicdomain/',
-    }),
-    art: { hue: 'bronze', motif: 'waves' },
-  },
-  {
-    id: 'vivaldi-spring-i',
-    title: 'The Four Seasons — Spring: I. Allegro',
-    composer: 'Antonio Vivaldi',
-    period: 'Baroque',
-    durationSec: 171.4,
-    timeSignature: '4/4',
-    conductingOptions: ['4/4', '2/4'],
-    difficulty: 'Intermediate',
-    description: 'La Primavera: the bright spring theme, birdsong in the solo violins, a storm and a return. Rich in dynamic contrast, which makes it ideal for left-hand practice.',
-    status: 'available',
-    midiUrl: '/midi/vivaldi-spring-i.mid',
-    midiLicense: mutopia('ftp/VivaldiA/O8/spring', 'Creative Commons Attribution-ShareAlike 3.0', 'Anonymous (typesetter)', 'Performers’ Facsimiles', {
-      notes: 'Typesetting licensed CC BY-SA 3.0, so this MIDI file is shared under the same licence. Double basses double the cellos an octave below (the source has no separate bass part). Only movement I is included.',
-      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
-    }),
-    art: { hue: 'ivory', motif: 'waves' },
-  },
-  {
-    id: 'bach-brandenburg-1-i',
-    title: 'Brandenburg Concerto No. 1 — I. Allegro',
-    composer: 'Johann Sebastian Bach',
-    period: 'Baroque',
-    durationSec: 224,
-    timeSignature: '4/4',
-    conductingOptions: ['4/4', '2/4'],
-    difficulty: 'Intermediate',
-    description: 'Hunting horns, three oboes, bassoon and strings in conversation: bright, driving counterpoint over a steady pulse. A fine piece for a steady four-beat pattern.',
-    status: 'available',
-    midiUrl: '/midi/bach-brandenburg-1-i.mid',
-    midiLicense: mutopia('ftp/BachJS/BWV1046/Brandenburg1-1', 'Creative Commons Attribution 3.0', 'Ben Stewart', 'Rust, 1871 (Bach Gesellschaft, vol. 19)', {
-      notes: 'The violino piccolo part is omitted (its typeset MIDI is a minor third off the harmony; Violins I carry the same line). Credit the typesetter when redistributing.',
-      licenseUrl: 'https://creativecommons.org/licenses/by/3.0/',
-    }),
-    art: { hue: 'bronze', motif: 'rings' },
-  },
   {
     id: 'aurora-etude',
     title: 'Aurora Étude',
@@ -172,10 +72,24 @@ export const COMPOSITIONS: Composition[] = [
     timeSignature: '4/4',
     conductingOptions: ['4/4', '2/4'],
     difficulty: 'Intermediate',
-    description: 'A vivid concerto for strings built on a driving, interlocking motif. (Concerto No. 1 is available in the meantime.)',
+    description: 'A vivid concerto for strings built on a driving, interlocking motif — an ideal piece for practising a steady four-beat pattern.',
     status: 'planned',
-    pendingReason: PLANNED_NO_SOURCE('No. 3 (BWV 1048)'),
+    pendingReason: PLANNED_REASON,
     art: { hue: 'bronze', motif: 'rings' },
+  },
+  {
+    id: 'vivaldi-spring',
+    title: 'The Four Seasons — Spring',
+    composer: 'Antonio Vivaldi',
+    period: 'Baroque',
+    durationSec: 0,
+    timeSignature: '4/4',
+    conductingOptions: ['4/4', '2/4'],
+    difficulty: 'Intermediate',
+    description: 'Bright birdsong, storms and pastoral calm. Rich in dynamic contrast, which makes it ideal for left-hand practice.',
+    status: 'planned',
+    pendingReason: PLANNED_REASON,
+    art: { hue: 'ivory', motif: 'staff' },
   },
   {
     id: 'handel-water-music',
@@ -188,13 +102,10 @@ export const COMPOSITIONS: Composition[] = [
     difficulty: 'Beginner',
     description: 'Stately, dance-like suites for the royal barge. A gentle introduction to conducting in three.',
     status: 'planned',
-    pendingReason: PLANNED_NO_SOURCE('Water Music (HWV 348–350)'),
+    pendingReason: PLANNED_REASON,
     art: { hue: 'bronze', motif: 'waves' },
   },
 ]
-
-/** The piece a first-time user starts with: the gentlest one (original, 4/4, slow tempo). */
-export const DEFAULT_COMPOSITION_ID = 'aurora-etude'
 
 export const getComposition = (id: string) => COMPOSITIONS.find((c) => c.id === id)
 

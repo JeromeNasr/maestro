@@ -57,10 +57,6 @@ export interface DemoOptions {
   seed: number
   /** Detector score reported for the hands (0–1). */
   score: number
-  /** 'mediapipe-raw' (default): labels inverted like MediaPipe does for an un-mirrored frame. 'as-user': labels equal the user's side. */
-  labelModel?: 'mediapipe-raw' | 'as-user'
-  /** Probability per frame that a hand's reported label flips (real detectors flicker). Deterministic with `seed`. */
-  labelFlicker?: number
 }
 
 const DEFAULTS: DemoOptions = { bpm: 72, timeSignature: '4/4', aspect: 4 / 3, leftLevel: 'wave', style: 'bounce', dropouts: true, noise: 0, scale: 1, seed: 1, score: 0.97 }
@@ -129,14 +125,7 @@ export class DemoSource {
     return { x: 0.22, y: 0.8 - Math.max(0, Math.min(1, val(l, tSec))) * 0.6 }
   }
 
-  private reportedLabel(side: Side): 'Left' | 'Right' {
-    const asUser = this.opts.labelModel === 'as-user'
-    let right = (side === 'right') === asUser // raw model: the user's right hand is reported as "Left"
-    if ((this.opts.labelFlicker ?? 0) > 0 && this.rnd() < (this.opts.labelFlicker ?? 0)) right = !right
-    return right ? 'Right' : 'Left'
-  }
-
-  /** Detections in RAW (un-mirrored) space, labelled the way MediaPipe really reports an UN-mirrored frame: inverted (the user's right hand is "Left"), unless `labelModel: 'as-user'`. Call with increasing time. */
+  /** Detections in RAW (un-mirrored) space, labelled as a camera model following MediaPipe's docs would report them. Call with increasing time. */
   detect(tMs: number): DetectionResult {
     const t = tMs / 1000
     if (this.lastT !== null) this.phase += (Math.max(0, t - this.lastT) * val(this.opts.bpm, t)) / 60
@@ -150,7 +139,7 @@ export class DemoSource {
       const n = this.opts.noise
       hands.push({
         landmarks: display.map((q) => ({ x: 1 - q.x + (n ? (this.rnd() - 0.5) * n : 0), y: q.y + (n ? (this.rnd() - 0.5) * n : 0), z: q.z })),
-        label: this.reportedLabel(side),
+        label: side === 'left' ? 'Left' : 'Right',
         score: this.opts.score,
       })
     }

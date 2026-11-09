@@ -3,27 +3,17 @@ import { SECTIONS, type SectionId } from '@/orchestra/sections'
 import type { AudioBackend, BackendInfo } from './backend'
 import { sectionBrightnessHz, sectionDynamicsGain, velocityScale } from './dynamics'
 import { Mixer } from './mixer'
-import { barAndBeat, instrumentsUsed, nominalDurationSec, sectionsUsed, type Score } from './score'
-import type { InstrumentId } from './instruments'
+import { barAndBeat, nominalDurationSec, sectionsUsed, type Score } from './score'
 import { Sequencer, type SequencerOptions } from './sequencer'
 
 export type AudioStatus = 'uninitialized' | 'initializing' | 'ready' | 'error'
 export type Transport = 'stopped' | 'playing' | 'paused' | 'finished'
 
-export interface SampleStatus {
-  state: 'idle' | 'loading' | 'ready'
-  loaded: number
-  total: number
-  /** Instrument currently being fetched (for the progress label). */
-  current: string
-}
-
 export interface AudioSnapshot {
   status: AudioStatus
   error: string | null
   transport: Transport
-  loaded: { title: string; totalBeats: number; beatsPerBar: number; referenceBpm: number; nominalSec: number; sections: SectionId[]; instruments: InstrumentId[] } | null
-  samples: SampleStatus
+  loaded: { title: string; totalBeats: number; beatsPerBar: number; referenceBpm: number; nominalSec: number; sections: SectionId[] } | null
   positionBeats: number
   bar: number
   beatInBar: number
@@ -81,7 +71,7 @@ export class AudioEngine {
     this.mixer = deps.mixer ?? new Mixer()
     this.store = createStore<AudioSnapshot>({
       status: 'uninitialized', error: null, transport: 'stopped', loaded: null, positionBeats: 0, bar: 1, beatInBar: 1, progress: 0,
-      elapsedSec: 0, targetBpm: null, currentBpm: null, dynamicsLevel: this.level, levels: ZERO_LEVELS(), backend: null, lateNotes: 0, samples: { state: 'idle', loaded: 0, total: 0, current: '' },
+      elapsedSec: 0, targetBpm: null, currentBpm: null, dynamicsLevel: this.level, levels: ZERO_LEVELS(), backend: null, lateNotes: 0,
     })
   }
 
@@ -153,35 +143,9 @@ export class AudioEngine {
     this.seq = new Sequencer(score, this.deps.sequencer, score.referenceBpm)
     this.patch({
       transport: 'stopped', positionBeats: 0, bar: 1, beatInBar: 1, progress: 0, elapsedSec: 0,
-      loaded: { title: score.title, totalBeats: score.totalBeats, beatsPerBar: score.beatsPerBar, referenceBpm: score.referenceBpm, nominalSec: nominalDurationSec(score), sections: sectionsUsed(score), instruments: instrumentsUsed(score) },
-      samples: { state: 'idle', loaded: 0, total: 0, current: '' },
+      loaded: { title: score.title, totalBeats: score.totalBeats, beatsPerBar: score.beatsPerBar, referenceBpm: score.referenceBpm, nominalSec: nominalDurationSec(score), sections: sectionsUsed(score) },
       targetBpm: score.referenceBpm, currentBpm: score.referenceBpm,
     })
-  }
-
-  /**
-   * Make the loaded score playable: have the backend download/decode the sounds its instruments need. Safe to call
-   * repeatedly (already-loaded instruments are skipped). Resolves false (and sets the error state) if that fails.
-   */
-  async prepare(): Promise<boolean> {
-    const backend = this.backend
-    const score = this.score
-    if (!backend || !score || this.disposed) return false
-    if (!backend.prepare) return true
-    const instruments = instrumentsUsed(score)
-    this.patch({ samples: { state: 'loading', loaded: 0, total: 0, current: '' } })
-    try {
-      await backend.prepare(instruments, (p) => {
-        if (this.backend === backend) this.patch({ samples: { state: 'loading', loaded: p.loaded, total: p.total, current: p.instrument } })
-      })
-    } catch (e) {
-      if (this.disposed) return false
-      this.patch({ status: 'error', error: e instanceof Error ? e.message : 'The orchestra could not be loaded', samples: { state: 'idle', loaded: 0, total: 0, current: '' } })
-      return false
-    }
-    if (this.disposed || this.backend !== backend) return false
-    this.patch({ backend: backend.info, samples: { state: 'ready', loaded: this.snapshot.samples.total, total: this.snapshot.samples.total, current: '' } })
-    return true
   }
 
   /** Start from the beginning (or the current position after a stop). Returns false if audio is not ready or nothing is loaded. */

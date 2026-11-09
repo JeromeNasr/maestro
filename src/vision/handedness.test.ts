@@ -5,8 +5,8 @@ const SWAPPED: HandednessResolution = { swap: true, verified: true, origin: 'cal
 const c = (label: 'Left' | 'Right', x: number, score = 0.9) => ({ label, score, palm: { x, y: 0.5 } })
 
 describe('effectiveHandedness', () => {
-  it("uses MediaPipe's documented swap for un-mirrored input in auto mode, flagged unverified, until calibration verifies one", () => {
-    expect(effectiveHandedness('auto', null)).toEqual({ swap: true, verified: false, origin: 'unverified-default' })
+  it("applies NO correction in auto mode until calibration has verified one", () => {
+    expect(effectiveHandedness('auto', null)).toEqual({ swap: false, verified: false, origin: 'unverified-default' })
   })
   it('uses the calibrated result in auto mode', () => {
     expect(effectiveHandedness('auto', { swap: true })).toMatchObject({ swap: true, verified: true, origin: 'calibration' })

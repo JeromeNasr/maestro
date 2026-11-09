@@ -1,7 +1,7 @@
 import { createPersistentStore } from '@/lib/store'
-import { COMPOSITIONS, DEFAULT_COMPOSITION_ID, getComposition } from './compositions'
+import { COMPOSITIONS, getComposition } from './compositions'
 
-const DEFAULT_ID = getComposition(DEFAULT_COMPOSITION_ID)?.status === 'available' ? DEFAULT_COMPOSITION_ID : (COMPOSITIONS.find((c) => c.status === 'available')?.id ?? '')
+const DEFAULT_ID = COMPOSITIONS.find((c) => c.status === 'available')?.id ?? ''
 
 /** Selected composition id, persisted. Only 'available' compositions can be selected. */
 export const selectedCompositionId = createPersistentStore<string>('maestro.selectedComposition.v1', DEFAULT_ID, (raw) => {

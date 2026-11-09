@@ -1,6 +1,6 @@
 # MAESTRO — Conduct Your Own Orchestra
 
-Conduct a virtual orchestra with your hands. Your **right hand** sets the tempo (beat patterns in 2/4, 3/4 and 4/4), your **left hand** shapes the dynamics (pp → ff), and a recorded orchestra — strings, woodwinds, brass and percussion played from free (CC0) instrument recordings — follows you through original pieces and real classics (Beethoven, Mozart, Vivaldi, Bach). It runs entirely in your browser: **no backend, no account, no API keys, and camera frames never leave your machine.**
+Conduct a virtual orchestra with your hands. Your **right hand** sets the tempo (beat patterns in 2/4, 3/4 and 4/4), your **left hand** shapes the dynamics (pp → ff), and a real orchestra — four synthesised sections playing real MIDI scores — follows you. It runs entirely in your browser: **no backend, no account, no API keys, and camera frames never leave your machine.**
 
 ## Install and run (Linux)
 
