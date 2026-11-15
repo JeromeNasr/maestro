@@ -119,7 +119,7 @@ describe('navigation behaviour', () => {
     await renderAt('/library')
     expect(document.title).toBe('Library — MAESTRO')
     await userEvent.click(screen.getByRole('navigation', { name: 'Primary' }).querySelector('a[href="/academy"]')!)
-    expect(document.title).toBe('Conducting Academy — MAESTRO')
+    await waitFor(() => expect(document.title).toBe('Conducting Academy — MAESTRO')) // the page is lazy-loaded
   })
 
   it('has no live region wrapping the animated lesson content', async () => {
