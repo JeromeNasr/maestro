@@ -16,7 +16,7 @@ export function Library() {
       <p className="eyebrow">Composition library</p>
       <h1 className="mt-3 text-5xl">Choose your repertoire</h1>
       <p className="mt-4 max-w-2xl text-ivory-dim">
-        A piece goes on the programme only once its MIDI arrangement has a licence we have checked. The rest are listed so you can see what is coming.
+        Every piece here has a licence we have checked, shown under “Source & licence”. The two famous ones still missing are listed at the end with the reason.
       </p>
 
       <div className="mt-10 flex flex-col gap-4 border-y hairline py-5 sm:flex-row sm:items-center sm:justify-between">

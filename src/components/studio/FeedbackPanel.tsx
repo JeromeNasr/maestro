@@ -4,6 +4,16 @@ import { BeatPulse, DynamicsMeter, SectionLevels } from './Visualizers'
 import { TrajectoryCanvas } from './TrajectoryCanvas'
 import { useAudio, useGesture, useStudio } from './useConductingSession'
 
+/** Plain-language reasons a stroke was seen but not counted, with what to change. */
+export const REJECT_HINT: Record<string, string> = {
+  'too-small': 'That movement was too small to count as a beat. Make the stroke a little bigger and keep it steady — or raise sensitivity in Tuning.',
+  'too-slow': 'That stroke was too slow or too long. Move a little faster and stop clearly at the bottom (the ictus).',
+  'too-brief': 'That stroke was too quick to read. Slow it down slightly.',
+  'too-soon': 'Two strokes came very close together. Give one clear stroke per beat.',
+  'off-pattern': 'That direction does not fit the pattern. Follow the shape shown in the Trajectory panel.',
+  'awaiting-downbeat': 'Start with a clear downward stroke: that is beat 1.',
+}
+
 const label = 'text-[11px] uppercase tracking-widest text-ivory-mute'
 
 /** Visual feedback, all driven by real data: detected beats, the right-hand path, the left-hand dynamics and section output. */
@@ -22,6 +32,9 @@ export function FeedbackPanel({ session }: { session: ConductingSession }) {
           </span>
         )}
       </header>
+      {studio.lastReject && g.timestampMs - studio.lastReject.atMs < 3000 && g.timestampMs >= studio.lastReject.atMs && (
+        <p role="status" className="mt-3 text-xs text-gold-soft" data-testid="gesture-hint">{REJECT_HINT[studio.lastReject.reason]}</p>
+      )}
       <div className="mt-4 grid gap-6 sm:grid-cols-2">
         <div className="space-y-2">
           <p className={label}>Beat</p>

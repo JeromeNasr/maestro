@@ -1,0 +1,354 @@
+{
+ "generatedWith": "scripts/music/build-classics.mjs",
+ "lilypond": "GNU LilyPond 2.24.3 (running Guile 2.2)",
+ "pieces": [
+  {
+   "id": "beethoven-symphony-5-i",
+   "file": "beethoven-symphony-5-i.mid",
+   "bytes": 74625,
+   "durationSec": 422.1,
+   "notes": 8295,
+   "referenceBpm": 144,
+   "meter": [
+    2,
+    4
+   ],
+   "tracks": [
+    {
+     "track": "Flutes",
+     "program": 73,
+     "notes": 659
+    },
+    {
+     "track": "Oboes",
+     "program": 68,
+     "notes": 669
+    },
+    {
+     "track": "Clarinets",
+     "program": 71,
+     "notes": 874
+    },
+    {
+     "track": "Bassoons",
+     "program": 70,
+     "notes": 902
+    },
+    {
+     "track": "Horns",
+     "program": 60,
+     "notes": 471
+    },
+    {
+     "track": "Trumpets",
+     "program": 56,
+     "notes": 442
+    },
+    {
+     "track": "Timpani",
+     "program": 47,
+     "notes": 239
+    },
+    {
+     "track": "Violins I",
+     "program": 40,
+     "notes": 1033
+    },
+    {
+     "track": "Violins II",
+     "program": 40,
+     "notes": 995
+    },
+    {
+     "track": "Violas",
+     "program": 41,
+     "notes": 845
+    },
+    {
+     "track": "Cellos",
+     "program": 42,
+     "notes": 640
+    },
+    {
+     "track": "Double basses",
+     "program": 43,
+     "notes": 526
+    }
+   ],
+   "mutopia": {
+    "repository": "https://github.com/MutopiaProject/MutopiaProject",
+    "commit": "2144afd6f52d56c5b6995b8b589ef1268b3139f0",
+    "path": "ftp/BeethovenLv/O67/Symphony5_1",
+    "license": "Public Domain",
+    "maintainer": "Stelios Samelis (adapted to 2.16.2 by Johannes Heinecke)",
+    "source": "Breitkopf and H\u00e4rtel (1862-1865)",
+    "title": "Symphony No. 5 - Opus 67 (1st Movement)",
+    "date": "1807/08"
+   },
+   "modifications": [
+    "convert-ly syntax update to LilyPond 2.24",
+    "Reference tempo set to 144 (the typeset file uses 192 for its own MIDI); you set the real tempo by conducting.",
+    "Double basses sound an octave below written pitch.",
+    "Repeats are unfolded (the exposition repeat is played)."
+   ]
+  },
+  {
+   "id": "mozart-nachtmusik-i",
+   "file": "mozart-nachtmusik-i.mid",
+   "bytes": 32309,
+   "durationSec": 248.6,
+   "notes": 3553,
+   "referenceBpm": 132,
+   "meter": [
+    4,
+    4
+   ],
+   "tracks": [
+    {
+     "track": "Violins I",
+     "program": 40,
+     "notes": 830
+    },
+    {
+     "track": "Violins II",
+     "program": 40,
+     "notes": 761
+    },
+    {
+     "track": "Violas",
+     "program": 41,
+     "notes": 766
+    },
+    {
+     "track": "Cellos",
+     "program": 42,
+     "notes": 598
+    },
+    {
+     "track": "Double basses",
+     "program": 43,
+     "notes": 598,
+     "doubles": "Cellos \u22121 octave"
+    }
+   ],
+   "mutopia": {
+    "repository": "https://github.com/MutopiaProject/MutopiaProject",
+    "commit": "2144afd6f52d56c5b6995b8b589ef1268b3139f0",
+    "path": "ftp/MozartWA/KV525/MozartWA-KV525",
+    "license": "Public Domain",
+    "maintainer": "Mike Blackstock",
+    "source": "Breitkopf & H\u00e4rtel, 1883",
+    "title": "Eine Kleine Nachtmusik",
+    "date": "1787"
+   },
+   "modifications": [
+    "LilyPond layout stubs for 3 removed markup helpers (page footers only)",
+    "convert-ly syntax update to LilyPond 2.24",
+    "Double basses double the cellos an octave below (the score writes cello and double bass on one staff).",
+    "Dynamics are the typesetter\u2019s MIDI velocities."
+   ]
+  },
+  {
+   "id": "mozart-nachtmusik-ii",
+   "file": "mozart-nachtmusik-ii.mid",
+   "bytes": 16794,
+   "durationSec": 243.8,
+   "notes": 1898,
+   "referenceBpm": 72,
+   "meter": [
+    4,
+    4
+   ],
+   "tracks": [
+    {
+     "track": "Violins I",
+     "program": 40,
+     "notes": 494
+    },
+    {
+     "track": "Violins II",
+     "program": 40,
+     "notes": 591
+    },
+    {
+     "track": "Violas",
+     "program": 41,
+     "notes": 351
+    },
+    {
+     "track": "Cellos",
+     "program": 42,
+     "notes": 231
+    },
+    {
+     "track": "Double basses",
+     "program": 43,
+     "notes": 231,
+     "doubles": "Cellos \u22121 octave"
+    }
+   ],
+   "mutopia": {
+    "repository": "https://github.com/MutopiaProject/MutopiaProject",
+    "commit": "2144afd6f52d56c5b6995b8b589ef1268b3139f0",
+    "path": "ftp/MozartWA/KV525/MozartWA-KV525",
+    "license": "Public Domain",
+    "maintainer": "Mike Blackstock",
+    "source": "Breitkopf & H\u00e4rtel, 1883",
+    "title": "Eine Kleine Nachtmusik",
+    "date": "1787"
+   },
+   "modifications": [
+    "LilyPond layout stubs for 3 removed markup helpers (page footers only)",
+    "convert-ly syntax update to LilyPond 2.24",
+    "Double basses double the cellos an octave below (the score writes cello and double bass on one staff)."
+   ]
+  },
+  {
+   "id": "vivaldi-spring-i",
+   "file": "vivaldi-spring-i.mid",
+   "bytes": 31381,
+   "durationSec": 171.4,
+   "notes": 3674,
+   "referenceBpm": 115,
+   "meter": [
+    4,
+    4
+   ],
+   "tracks": [
+    {
+     "track": "Violin solo",
+     "program": 40,
+     "notes": 820
+    },
+    {
+     "track": "Violins I",
+     "program": 40,
+     "notes": 705
+    },
+    {
+     "track": "Violins II",
+     "program": 40,
+     "notes": 697
+    },
+    {
+     "track": "Violas",
+     "program": 41,
+     "notes": 450
+    },
+    {
+     "track": "Cellos",
+     "program": 42,
+     "notes": 501
+    },
+    {
+     "track": "Double basses",
+     "program": 43,
+     "notes": 501,
+     "doubles": "Cellos \u22121 octave"
+    }
+   ],
+   "mutopia": {
+    "repository": "https://github.com/MutopiaProject/MutopiaProject",
+    "commit": "2144afd6f52d56c5b6995b8b589ef1268b3139f0",
+    "path": "ftp/VivaldiA/O8/spring",
+    "license": "Creative Commons Attribution-ShareAlike 3.0",
+    "maintainer": "Anonymous",
+    "source": "Performers' Facsimiles",
+    "title": "La Primavera  /  Spring",
+    "date": "1725"
+   },
+   "modifications": [
+    "LilyPond syntax: staccatissimo shorthand -| \u2192 -! (same articulation); removed engraving-only beam-setting calls from movements II/III",
+    "convert-ly syntax update to LilyPond 2.24",
+    "Double basses double the cellos an octave below (continuo practice; the source has no separate bass part).",
+    "The source also contains movements II and III; only I (Allegro) is included."
+   ]
+  },
+  {
+   "id": "bach-brandenburg-1-i",
+   "file": "bach-brandenburg-1-i.mid",
+   "bytes": 58338,
+   "durationSec": 224,
+   "notes": 6769,
+   "referenceBpm": 90,
+   "meter": [
+    4,
+    4
+   ],
+   "tracks": [
+    {
+     "track": "Horns I",
+     "program": 60,
+     "notes": 458
+    },
+    {
+     "track": "Horns II",
+     "program": 60,
+     "notes": 426
+    },
+    {
+     "track": "Oboes I",
+     "program": 68,
+     "notes": 807
+    },
+    {
+     "track": "Oboes II",
+     "program": 68,
+     "notes": 648
+    },
+    {
+     "track": "Oboes III",
+     "program": 68,
+     "notes": 540
+    },
+    {
+     "track": "Bassoon",
+     "program": 70,
+     "notes": 676
+    },
+    {
+     "dropped": "Violino piccolo: the typeset MIDI plays it a minor third above the written key and it clashes with the harmony (it doubles Violins I)"
+    },
+    {
+     "track": "Violins I",
+     "program": 40,
+     "notes": 755
+    },
+    {
+     "track": "Violins II",
+     "program": 40,
+     "notes": 621
+    },
+    {
+     "track": "Violas",
+     "program": 41,
+     "notes": 497
+    },
+    {
+     "track": "Cellos",
+     "program": 42,
+     "notes": 682
+    },
+    {
+     "track": "Double basses",
+     "program": 43,
+     "notes": 659
+    }
+   ],
+   "mutopia": {
+    "repository": "https://github.com/MutopiaProject/MutopiaProject",
+    "commit": "2144afd6f52d56c5b6995b8b589ef1268b3139f0",
+    "path": "ftp/BachJS/BWV1046/Brandenburg1-1",
+    "license": "Creative Commons Attribution 3.0",
+    "maintainer": "Ben Stewart",
+    "source": "Rust, 1871. Bach Gesellschaft Volume 19",
+    "title": "Brandenburg Concerto No. 1 (First Movement - Allegro)",
+    "date": "1717-1723?"
+   },
+   "modifications": [
+    "convert-ly syntax update to LilyPond 2.24",
+    "The violino piccolo part is left out (see above); Violins I carry the same line."
+   ]
+  }
+ ]
+}

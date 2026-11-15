@@ -28,6 +28,21 @@ export function TransportPanel({ session }: { session: ConductingSession }) {
         </span>
       </header>
 
+      {audio.samples.state === 'loading' && (
+        <div role="status" className="mt-3 text-sm text-ivory-dim" data-testid="samples-loading">
+          Loading the orchestra{audio.samples.current ? ` — ${audio.samples.current}` : '…'}
+          {audio.samples.total > 0 && (
+            <div className="mt-2 h-1 overflow-hidden rounded-sm bg-ink-600" role="progressbar" aria-label="Loading orchestral samples" aria-valuemin={0} aria-valuemax={audio.samples.total} aria-valuenow={audio.samples.loaded}>
+              <div className="h-full bg-gold transition-[width] duration-150" style={{ width: `${(audio.samples.loaded / audio.samples.total) * 100}%` }} />
+            </div>
+          )}
+        </div>
+      )}
+      {status === 'ready' && audio.backend && (
+        <p className={`mt-3 text-xs ${audio.backend.fallbackReason ? 'text-gold-soft' : 'text-ivory-mute'}`} data-testid="sound-source" data-kind={audio.backend.kind}>
+          {audio.backend.fallbackReason ? `Sound: synthesised fallback. ${audio.backend.fallbackReason}` : audio.backend.kind === 'sampled' ? `Sound: recorded orchestra — ${audio.backend.detail ?? 'samples'}` : 'Sound: synthesised orchestra'}
+        </p>
+      )}
       {status === 'error' && audio.error && <p role="alert" className="mt-3 text-sm text-gold-soft">{audio.error}</p>}
       {audio.lateNotes > 0 && <p role="status" className="mt-3 text-xs text-gold-soft" data-testid="late-notes">{audio.lateNotes} note{audio.lateNotes === 1 ? ' was' : 's were'} skipped because the browser was too busy to play {audio.lateNotes === 1 ? 'it' : 'them'} on time. Close other tabs or lower the camera load if this keeps growing.</p>}
       {studio.load === 'loading' && <p role="status" className="mt-3 text-sm text-ivory-dim">Loading the score…</p>}

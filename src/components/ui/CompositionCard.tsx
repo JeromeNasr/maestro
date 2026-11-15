@@ -3,6 +3,15 @@ import { formatDuration } from '@/library/compositions'
 import { CompositionArt } from './CompositionArt'
 import { StatusTag } from './StatusTag'
 
+/** Short, honest badge for the licence of the MIDI arrangement. */
+export function licenseBadge(lic: string): string {
+  if (/^CC0/i.test(lic)) return 'Original · CC0'
+  if (/ShareAlike/i.test(lic)) return 'CC BY-SA 3.0'
+  if (/Attribution/i.test(lic)) return 'CC BY 3.0'
+  if (/Public Domain/i.test(lic)) return 'Public domain'
+  return lic
+}
+
 interface Props {
   composition: Composition
   selected?: boolean
@@ -28,7 +37,7 @@ export function CompositionCard({ composition: c, selected = false, onSelect, nu
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <p className="smallcaps text-sm text-gold-soft">{c.composer}</p>
-          {available ? <StatusTag kind="demo">Original · CC0</StatusTag> : <StatusTag kind="neutral">Coming later</StatusTag>}
+          {available && c.midiLicense ? <StatusTag kind="neutral">{licenseBadge(c.midiLicense.license)}</StatusTag> : <StatusTag kind="neutral">Coming later</StatusTag>}
         </div>
         <h3 className="mt-1 text-3xl leading-tight">{c.title}</h3>
         <p className="mt-3 max-w-xl text-sm leading-relaxed text-ivory-dim">{c.description}</p>
@@ -36,6 +45,20 @@ export function CompositionCard({ composition: c, selected = false, onSelect, nu
         <p className="mt-4 text-xs text-ivory-mute">
           {c.period} · {c.timeSignature} · {c.difficulty} · {formatDuration(c.durationSec)}
         </p>
+        {available && c.midiLicense && (
+          <details className="mt-3 text-xs text-ivory-mute">
+            <summary className="cursor-pointer text-ivory-dim hover:text-ivory">Source &amp; licence</summary>
+            <div className="mt-2 max-w-xl space-y-1 leading-relaxed">
+              <p>{c.midiLicense.license}</p>
+              <p>{c.midiLicense.source}</p>
+              {c.midiLicense.attribution && <p>{c.midiLicense.attribution}</p>}
+              {c.midiLicense.notes && <p>{c.midiLicense.notes}</p>}
+              {c.midiLicense.licenseUrl && (
+                <p><a className="underline decoration-gold/50 underline-offset-2 hover:text-ivory" href={c.midiLicense.licenseUrl} target="_blank" rel="noreferrer noopener">Licence text</a></p>
+              )}
+            </div>
+          </details>
+        )}
       </div>
       {onSelect && (
         <div className="sm:col-start-2 lg:col-start-4 lg:self-center">

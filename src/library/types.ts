@@ -14,6 +14,10 @@ export interface AssetLicense {
   license: string
   source: string
   notes?: string
+  /** Licences such as CC BY / CC BY-SA require crediting the typesetter: shown in the Library and the Studio. */
+  attribution?: string
+  /** Link to the licence text. */
+  licenseUrl?: string
 }
 
 export interface Composition {

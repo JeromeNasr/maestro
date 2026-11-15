@@ -18,9 +18,23 @@ describe('composition registry', () => {
     for (const c of COMPOSITIONS.filter((c) => c.status === 'planned')) expect(c.pendingReason, c.id).toBeTruthy()
   })
 
-  it('lists the three intended classical pieces as planned, not available', () => {
-    for (const id of ['bach-brandenburg-3', 'vivaldi-spring', 'handel-water-music']) {
+  it('lists the pieces without a verifiable source as planned, not available', () => {
+    for (const id of ['bach-brandenburg-3', 'handel-water-music']) {
       expect(getComposition(id)?.status).toBe('planned')
+      expect(getComposition(id)?.midiUrl).toBeUndefined()
+    }
+  })
+
+  it('offers the real classical repertoire', () => {
+    for (const id of ['beethoven-symphony-5-i', 'mozart-nachtmusik-i', 'mozart-nachtmusik-ii', 'vivaldi-spring-i', 'bach-brandenburg-1-i']) {
+      expect(getComposition(id)?.status, id).toBe('available')
+    }
+  })
+
+  it('licences that require attribution carry it', () => {
+    for (const c of COMPOSITIONS.filter((c) => c.status === 'available' && /Attribution/i.test(c.midiLicense?.license ?? ''))) {
+      expect(c.midiLicense?.attribution, c.id).toBeTruthy()
+      expect(c.midiLicense?.licenseUrl, c.id).toMatch(/^https:\/\/creativecommons\.org\/licenses\//)
     }
   })
 })
@@ -30,7 +44,7 @@ describe('searchCompositions', () => {
     expect(searchCompositions('  ')).toHaveLength(COMPOSITIONS.length)
   })
   it('matches composer, case-insensitively', () => {
-    expect(searchCompositions('vIvAlDi').map((c) => c.id)).toEqual(['vivaldi-spring'])
+    expect(searchCompositions('vIvAlDi').map((c) => c.id)).toEqual(['vivaldi-spring-i'])
   })
   it('matches time signature', () => {
     expect(searchCompositions('3/4').map((c) => c.id)).toEqual(['evening-minuet', 'handel-water-music'])

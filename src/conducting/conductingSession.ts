@@ -7,9 +7,9 @@ import { parseMidi } from '@/audio/midi'
 import type { Score, ScoreTrack } from '@/audio/score'
 import type { SequencerOptions } from '@/audio/sequencer'
 import type { GestureConfig, TimeSignature } from '@/config/gestureConfig'
-import type { CueKind, GestureSnapshot } from '@/gesture/types'
+import type { CueKind, GestureSnapshot, RejectReason } from '@/gesture/types'
 import { createStore, type Store } from '@/lib/store'
-import { COMPOSITIONS, getComposition } from '@/library/compositions'
+import { DEFAULT_COMPOSITION_ID, getComposition } from '@/library/compositions'
 import { selectedCompositionId } from '@/library/selection'
 import type { Composition } from '@/library/types'
 import type { CameraController } from '@/vision/camera'
@@ -57,6 +57,8 @@ export interface StudioSnapshot {
   fixedTempoPct: number
   /** The most recent beat (for the beat indicator); `seq` changes on every beat. */
   lastBeat: { seq: number; beatInBar: number; confidence: number; usedForTempo: boolean } | null
+  /** The most recent stroke the recogniser saw but did not count, and why. Cleared by the next accepted beat. */
+  lastReject: { seq: number; reason: RejectReason; direction: string; atMs: number } | null
   /** Short messages for the user (audio blocked, tab hidden, cue ignored…). */
   notice: string | null
   /** The just-finished performance, as recorded (null until one ends). */
@@ -96,6 +98,7 @@ export class ConductingSession {
   private active = false
   private loadToken = 0
   private beatSeq = 0
+  private rejectSeq = 0
   private unsubs: (() => void)[] = []
   private starting = false
 
@@ -103,10 +106,10 @@ export class ConductingSession {
     this.vision = new VisionSession({ createDetector: deps.createDetector, camera: deps.camera, scheduler: deps.scheduler, now: deps.now, getConfig: deps.getConfig, doc: deps.doc })
     this.gesture = new GestureInput(this.vision, deps.getConfig)
     const saved = getComposition(selectedCompositionId.get())
-    const first = (saved?.status === 'available' ? saved : COMPOSITIONS.find((c) => c.status === 'available')) ?? null
+    const first = (saved?.status === 'available' ? saved : getComposition(DEFAULT_COMPOSITION_ID)) ?? null
     this.store = createStore<StudioSnapshot>({
       composition: first, load: 'idle', loadError: null, tracks: [], timeSignature: first?.timeSignature ?? '4/4', tempoMode: 'follow', fixedTempoPct: 100,
-      lastBeat: null, notice: null, summary: null, summaryNote: null, demo: DEFAULT_DEMO,
+      lastBeat: null, lastReject: null, notice: null, summary: null, summaryNote: null, demo: DEFAULT_DEMO,
     })
     this.audioStore = createStore<AudioSnapshot>(new AudioEngine({ createBackend: deps.createBackend }).snapshot)
     this.bridge = new ConductorBridge(
@@ -182,7 +185,7 @@ export class ConductingSession {
     this.audio?.dispose()
     this.audio = null
     this.audioStore.set(new AudioEngine({ createBackend: this.deps.createBackend }).snapshot)
-    this.patch({ lastBeat: null })
+    this.patch({ lastBeat: null, lastReject: null })
   }
 
   // ───────────── composition & settings ─────────────
@@ -247,12 +250,14 @@ export class ConductingSession {
       await audio.init()
       if (!this.active || audio !== this.audio) return false
       if (audio.snapshot.status !== 'ready') return false
+      if (!(await audio.prepare())) return false
+      if (!this.active || audio !== this.audio) return false
       if (this.transport === 'playing') return true
       this.gesture.reset()
       this.gesture.setTimeSignature(this.store.get().timeSignature)
       audio.setTargetBpm(this.score.referenceBpm)
       this.applyFixedTempo()
-      this.patch({ summary: null, summaryNote: null, notice: null, lastBeat: null })
+      this.patch({ summary: null, summaryNote: null, notice: null, lastBeat: null, lastReject: null })
       const c = this.store.get().composition!
       this.recorder.begin({ compositionId: c.id, compositionTitle: c.title, timeSignature: this.store.get().timeSignature, referenceBpm: this.score.referenceBpm, startedAt: (this.deps.clock ?? (() => new Date()))() })
       const ok = audio.play()
@@ -266,7 +271,8 @@ export class ConductingSession {
   /** Enable audio without starting (lets hand cues start the piece later). Requires a user gesture. */
   async enableAudio(): Promise<boolean> {
     await this.audio?.init()
-    return this.audio?.snapshot.status === 'ready'
+    if (this.audio?.snapshot.status !== 'ready') return false
+    return this.audio.prepare()
   }
 
   pause() {
@@ -293,7 +299,7 @@ export class ConductingSession {
     this.stop()
     this.audio?.reset()
     this.gesture.reset()
-    this.patch({ summary: null, summaryNote: null, notice: null, lastBeat: null, tempoMode: 'follow', fixedTempoPct: 100 })
+    this.patch({ summary: null, summaryNote: null, notice: null, lastBeat: null, lastReject: null, tempoMode: 'follow', fixedTempoPct: 100 })
   }
 
   dismissSummary() {
@@ -341,7 +347,8 @@ export class ConductingSession {
       for (const e of p.events) if (e.type === 'beat') this.recorder.beat(e)
     }
     for (const e of p.events) {
-      if (e.type === 'beat') this.patch({ lastBeat: { seq: ++this.beatSeq, beatInBar: e.beatInBar, confidence: e.confidence, usedForTempo: e.usedForTempo } })
+      if (e.type === 'beat') this.patch({ lastBeat: { seq: ++this.beatSeq, beatInBar: e.beatInBar, confidence: e.confidence, usedForTempo: e.usedForTempo }, lastReject: null })
+      else if (e.type === 'stroke-rejected') this.patch({ lastReject: { seq: ++this.rejectSeq, reason: e.reason, direction: e.direction, atMs: e.timestampMs } })
     }
     this.bridge.handle(p.events, p.snapshot)
   }

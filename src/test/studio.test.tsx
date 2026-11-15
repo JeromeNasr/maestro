@@ -14,6 +14,7 @@ import { detectors } from './fakeMediapipe'
 import { installStudioEnv } from './studioEnv'
 
 vi.mock('@/audio/toneBackend', async () => await import('./fakeToneBackend'))
+vi.mock('@/audio/orchestraBackend', async () => await import('./fakeToneBackend'))
 vi.mock('@/vision/mediapipeDetector', async () => await import('./fakeMediapipe'))
 
 let env: ReturnType<typeof installStudioEnv>

@@ -8,3 +8,6 @@ export class ToneBackend extends FakeBackend {
     instances.push(this)
   }
 }
+
+/** The Studio builds an OrchestraBackend; in UI tests it is the same recording fake. */
+export { ToneBackend as OrchestraBackend }

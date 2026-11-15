@@ -54,13 +54,13 @@ export function Landing() {
       <section className="mx-auto max-w-5xl px-4 py-24 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <h2 className="text-5xl">Tonight’s programme</h2>
-          <Link to="/library" className="text-sm text-ivory-dim underline decoration-gold/50 underline-offset-4 hover:text-ivory">See the whole library</Link>
+          <Link to="/library" className="text-sm text-ivory-dim underline decoration-gold/50 underline-offset-4 hover:text-ivory">See the whole library ({COMPOSITIONS.filter((c) => c.status === 'available').length} pieces)</Link>
         </div>
         <p className="mt-4 max-w-xl text-ivory-dim">
-          Three short pieces of our own — one in four, one in three, one in two. The famous ones will join them as soon as we have arrangements whose licences we can check.
+          Beethoven, Mozart, Vivaldi and Bach, rendered from public scores whose licences we have checked — plus three short pieces of our own, in four, three and two to learn on.
         </p>
         <div className="mt-10 border-b hairline">
-          {COMPOSITIONS.filter((c) => c.status === 'available').map((c, i) => <CompositionCard key={c.id} composition={c} number={i + 1} />)}
+          {COMPOSITIONS.filter((c) => c.status === 'available').slice(0, 5).map((c, i) => <CompositionCard key={c.id} composition={c} number={i + 1} />)}
         </div>
       </section>
 

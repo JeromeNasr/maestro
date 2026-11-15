@@ -1,4 +1,5 @@
 import type { SectionId } from '@/orchestra/sections'
+import type { InstrumentId } from './instruments'
 import type { ScheduledNote } from './sequencer'
 
 export interface BackendInfo {
@@ -6,7 +7,13 @@ export interface BackendInfo {
   sampleRate?: number
   baseLatencySec?: number
   contextState?: string
+  /** Human-readable description of the sound source (shown in the Studio diagnostics). */
+  detail?: string
+  /** Set when the preferred (sampled) sound could not be used and a fallback is playing instead. */
+  fallbackReason?: string
 }
+
+export interface LoadProgress { loaded: number; total: number; instrument: string }
 
 /**
  * The only part of the audio system that touches Web Audio. The engine, sequencer, mixer and dynamics logic are pure
@@ -18,6 +25,8 @@ export interface AudioBackend {
   init(): Promise<void>
   /** Audio clock, seconds. */
   readonly currentTime: number
+  /** Optional: download/decode what these instruments need before they can sound. Resolves when ready; rejects if it cannot. */
+  prepare?(instruments: InstrumentId[], onProgress?: (p: LoadProgress) => void): Promise<void>
   /** Queue a note (audio-clock time). Notes are only sounded shortly before they are due, so `silence()` can cancel them. */
   scheduleNote(n: ScheduledNote): void
   /** Called every engine tick: sounds queued notes that are about to be due. */
