@@ -128,3 +128,15 @@ test('a real classic (Beethoven 5) loads its 12 instruments, every family sounds
   console.log(`BEETHOVEN percussion-only output peak=${timpaniPeak.toFixed(3)}`)
   expect(timpaniPeak).toBeGreaterThan(0.12)
 })
+
+test('Orchestra page: an instrument sounds (real samples, audible, no clipping) and its audio context closes on leaving', async ({ page }) => {
+  await page.goto('/orchestra')
+  await page.getByRole('button', { name: 'Play the whole range of the violin' }).click()
+  await expect(page.getByTestId('listen-violins').getByRole('button', { name: 'Stop the violin' })).toBeVisible({ timeout: 30_000 })
+  const peak = await outputPeak(page, 2500)
+  expect(peak).toBeGreaterThan(0.02)
+  expect(peak).toBeLessThanOrEqual(0.99)
+  await page.getByTestId('listen-violins').getByRole('button', { name: 'Stop the violin' }).click()
+  await page.getByRole('link', { name: 'Library' }).first().click()
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __tap: { analysers: AnalyserNode[] } }).__tap.analysers.every((a) => a.context.state === 'closed')), { timeout: 5000 }).toBe(true)
+})

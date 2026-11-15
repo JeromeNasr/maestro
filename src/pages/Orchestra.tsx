@@ -1,3 +1,6 @@
+import { useEffect, useState } from 'react'
+import { InstrumentPreview } from '@/audio/instrumentPreview'
+import { InstrumentListen } from '@/components/orchestra/InstrumentListen'
 import { Reveal } from '@/components/fx/Reveal'
 import { SolfegeKeys } from '@/components/fx/SolfegeKeys'
 import { noteName } from '@/lib/notes'
@@ -22,7 +25,7 @@ function RangeStrip({ range, label }: { range: [number, number]; label: string }
   )
 }
 
-function Instrument({ i }: { i: InstrumentLore }) {
+function Instrument({ i, preview }: { i: InstrumentLore; preview: InstrumentPreview }) {
   return (
     <li className="grid gap-x-10 gap-y-2 border-t hairline py-7 md:grid-cols-[minmax(0,11rem)_1fr]">
       <div>
@@ -39,6 +42,15 @@ function Instrument({ i }: { i: InstrumentLore }) {
         <p className="text-ivory">{i.voice}</p>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-ivory-dim">{i.detail}</p>
         {i.range && <RangeStrip range={i.range} label={i.name} />}
+        <InstrumentListen i={i} preview={preview} />
+        <div className="mt-5">
+          <p className="eyebrow">Famous players</p>
+          <ul className="mt-2 space-y-1.5">
+            {i.famous.map((f) => (
+              <li key={f.name} className="text-sm text-ivory-dim"><span className="text-ivory">{f.name}</span> — {f.note}</li>
+            ))}
+          </ul>
+        </div>
       </div>
     </li>
   )
@@ -84,6 +96,9 @@ function StagePlan() {
 }
 
 export function Orchestra() {
+  // one player for the whole page, so only one instrument sounds at a time; its audio context closes when you leave
+  const [preview] = useState(() => new InstrumentPreview())
+  useEffect(() => () => preview.close(), [preview])
   return (
     <>
       <section className="border-b hairline">
@@ -122,7 +137,7 @@ export function Orchestra() {
                 <p className="mt-5 leading-relaxed text-ivory-dim first-letter:float-left first-letter:mr-2 first-letter:font-serif first-letter:text-6xl first-letter:leading-[0.8] first-letter:text-gold">{f.intro}</p>
               </header>
               <ul className="mt-10 border-b hairline">
-                {f.instruments.map((i) => <Instrument key={i.name} i={i} />)}
+                {f.instruments.map((i) => <Instrument key={i.name} i={i} preview={preview} />)}
               </ul>
               {f.id === 'strings' && <p className="mt-3 text-xs text-ivory-mute">The gold bar on each line is the usual sounding range, drawn along seven octaves from Do1 to Do8; the tall tick marks middle Do (Do4). Ranges are approximate.</p>}
             </Reveal>

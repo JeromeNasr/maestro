@@ -28,3 +28,20 @@ describe('Orchestra page', () => {
     }
   })
 })
+
+describe('Orchestra page: listening and famous players', () => {
+  it('every instrument has a recording to play and at least one famous player', () => {
+    for (const i of FAMILIES.flatMap((f) => f.instruments)) {
+      expect(i.sound).toBeTruthy()
+      expect(i.famous.length).toBeGreaterThan(0)
+      for (const f of i.famous) expect(f.note.length).toBeGreaterThan(10)
+    }
+  })
+  it('offers hear-it for all instruments and a whole-range button for the pitched ones', () => {
+    render(<MemoryRouter><Orchestra /></MemoryRouter>)
+    const all = FAMILIES.flatMap((f) => f.instruments)
+    expect(screen.getAllByRole('button', { name: /^hear the / })).toHaveLength(all.length)
+    expect(screen.getAllByRole('button', { name: /whole range/i })).toHaveLength(all.filter((i) => i.range).length)
+    expect(screen.getByText('Paganini', { exact: false })).toBeInTheDocument()
+  })
+})
