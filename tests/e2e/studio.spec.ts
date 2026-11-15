@@ -209,6 +209,7 @@ test('a performance is saved and shown in Analytics with real values — and una
   // a playback-only session (no hands) has unavailable tracking
   await page.goto('/studio')
   await transport(page, 'Start').click()
+  await expect(transport(page, 'Pause')).toBeEnabled({ timeout: 60_000 }) // samples loaded and playing: the 5 s minimum counts playing time only
   await page.getByRole('radio', { name: 'Fixed tempo' }).check()
   await page.waitForTimeout(6500)
   await transport(page, 'Stop').click()
