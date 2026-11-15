@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 @layer base {
+  :root { --ease-out: cubic-bezier(.22, 1, .36, 1); --ease-soft: cubic-bezier(.4, 0, .2, 1); }
   html { color-scheme: dark; }
   body {
     @apply bg-ink-950 text-ivory font-sans antialiased;
@@ -19,7 +20,13 @@
   .smallcaps { font-variant-caps: all-small-caps; letter-spacing: .12em; }
   .eyebrow { @apply text-[11px] font-medium uppercase tracking-[0.28em] text-gold; }
   .hairline { @apply border-ivory/10; }
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-sm px-5 py-2.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40; }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-sm px-5 py-2.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-40;
+    transition: background-color .2s var(--ease-soft), border-color .2s var(--ease-soft), color .2s var(--ease-soft), transform .18s var(--ease-out);
+  }
+  .btn:not(:disabled):active { transform: scale(.97); }
+  .btn-gold:not(:disabled):hover { transform: translateY(-1px); }
+  .btn-gold:not(:disabled):active { transform: translateY(0) scale(.97); }
   .btn-gold { @apply bg-gold text-ink-950 hover:bg-gold-soft; }
   .btn-ghost { @apply border border-ivory/20 text-ivory hover:border-gold/60 hover:text-gold-soft; }
   .panel { @apply rounded-sm border border-ivory/10 bg-ink-900; }
@@ -28,3 +35,51 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
 }
+
+
+/* ───────── motion ───────── */
+/* Everything below is decoration. It is switched off for people who ask for reduced motion and in Lite mode (data-perf). */
+/* opacity only: a transform here would become the containing block of position:fixed children (the Studio's emergency bar) */
+@keyframes pageIn { from { opacity: 0; } to { opacity: 1; } }
+.page-enter { animation: pageIn .35s var(--ease-soft) both; }
+
+.reveal { opacity: 0; transform: translateY(16px); transition: opacity .8s var(--ease-out), transform .8s var(--ease-out); transition-delay: var(--reveal-delay, 0s); }
+.reveal.in { opacity: 1; transform: none; }
+
+@keyframes drift {
+  0% { transform: translate3d(0, 0, 0) rotate(-6deg); opacity: 0; }
+  12% { opacity: var(--note-alpha, .35); }
+  50% { transform: translate3d(var(--sway, 22px), -48vh, 0) rotate(8deg); }
+  88% { opacity: var(--note-alpha, .35); }
+  100% { transform: translate3d(calc(var(--sway, 22px) * -1), -100vh, 0) rotate(-8deg); opacity: 0; }
+}
+.float-note { position: absolute; bottom: -8%; color: #c4a35a; font-family: 'Cormorant Garamond', Georgia, serif; line-height: 1; will-change: transform, opacity; animation: drift var(--dur, 18s) linear var(--delay, 0s) infinite; pointer-events: none; }
+
+@keyframes burst { 0% { transform: translate(-50%, -50%) scale(.3) rotate(0); opacity: 1; } 100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1) rotate(var(--rot)); opacity: 0; } }
+.confetti { position: absolute; left: 50%; top: 50%; opacity: 0; animation: burst 1.5s var(--ease-out) var(--delay, 0s) both; will-change: transform, opacity; }
+@keyframes bravo { 0% { transform: translateY(14px) scale(.8); opacity: 0; } 18% { transform: none; opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(-10px); opacity: 0; } }
+.bravo { animation: bravo 2.4s var(--ease-out) both; }
+
+@keyframes pop { 0% { transform: scale(.4); opacity: 0; } 60% { transform: scale(1.25); opacity: 1; } 100% { transform: scale(1); } }
+.pop { display: inline-block; animation: pop .45s var(--ease-out) both; }
+
+@keyframes swing { from { transform: rotate(-26deg); } to { transform: rotate(26deg); } }
+.logo-mark { transition: transform .5s var(--ease-out); transform-origin: 50% 90%; }
+a:hover .logo-mark, a:focus-visible .logo-mark { transform: rotate(-12deg) scale(1.08); }
+
+/* meters and progress bars grow with transform (compositor only) instead of width (layout) */
+.bar { transform-origin: left center; transition: transform .12s linear; will-change: transform; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .float-note, .confetti { display: none; }
+}
+
+/* Lite mode: no decoration, no blur, no background motion. Conducting is untouched. */
+html[data-perf='lite'] body { background-image: none; }
+html[data-perf='lite'] .backdrop-blur { backdrop-filter: none; -webkit-backdrop-filter: none; background-color: rgb(11 10 9 / .97); }
+html[data-perf='lite'] .float-note, html[data-perf='lite'] .confetti { display: none; }
+html[data-perf='lite'] .reveal { opacity: 1; transform: none; transition: none; }
+html[data-perf='lite'] .page-enter { animation: none; }
+html[data-perf='lite'] .animate-fadeUp { animation: none; }
+html[data-perf='lite'] .bar { transition: none; will-change: auto; }

@@ -33,7 +33,7 @@ export function TransportPanel({ session }: { session: ConductingSession }) {
           Loading the orchestra{audio.samples.current ? ` — ${audio.samples.current}` : '…'}
           {audio.samples.total > 0 && (
             <div className="mt-2 h-1 overflow-hidden rounded-sm bg-ink-600" role="progressbar" aria-label="Loading orchestral samples" aria-valuemin={0} aria-valuemax={audio.samples.total} aria-valuenow={audio.samples.loaded}>
-              <div className="h-full bg-gold transition-[width] duration-150" style={{ width: `${(audio.samples.loaded / audio.samples.total) * 100}%` }} />
+              <div className="bar h-full w-full bg-gold" style={{ transform: `scaleX(${audio.samples.loaded / audio.samples.total})` }} />
             </div>
           )}
         </div>
@@ -61,7 +61,7 @@ export function TransportPanel({ session }: { session: ConductingSession }) {
 
       <div className="mt-4" aria-label="Playback position">
         <div className="h-1.5 overflow-hidden rounded-sm bg-ink-600" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(audio.progress * 100)} aria-label="Progress through the piece">
-          <div className="h-full bg-gold transition-[width] duration-150" style={{ width: `${audio.progress * 100}%` }} />
+          <div className="bar h-full w-full bg-gold" style={{ transform: `scaleX(${audio.progress})` }} />
         </div>
         <p className="mt-2 flex justify-between gap-3 text-xs tabular-nums text-ivory-mute" data-testid="position" data-bar={audio.bar} data-beat={audio.beatInBar}>
           <span>{loaded ? `Bar ${audio.bar} · beat ${audio.beatInBar}` : '—'}</span>

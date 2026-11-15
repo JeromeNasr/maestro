@@ -1,3 +1,4 @@
+import { isLite } from '@/lib/perf'
 import { CameraStartError } from './cameraErrors'
 
 export interface CameraDeps {
@@ -7,10 +8,11 @@ export interface CameraDeps {
 
 export interface CameraInfo { width: number; height: number; label: string }
 
-const PREFERRED: MediaStreamConstraints = {
-  video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 }, facingMode: 'user' },
-  audio: false,
-}
+/** Hand detection needs far fewer pixels than a webcam offers; Lite asks for a quarter of them and a lower frame rate. */
+const preferred = (): MediaStreamConstraints =>
+  isLite()
+    ? { video: { width: { ideal: 320 }, height: { ideal: 240 }, frameRate: { ideal: 24, max: 30 }, facingMode: 'user' }, audio: false }
+    : { video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 }, facingMode: 'user' }, audio: false }
 const RELAXED: MediaStreamConstraints = { video: true, audio: false }
 
 /**
@@ -40,7 +42,7 @@ export class CameraController {
 
     let stream: MediaStream
     try {
-      stream = await md.getUserMedia(PREFERRED)
+      stream = await md.getUserMedia(preferred())
     } catch (e) {
       const name = (e as { name?: string })?.name
       if (name === 'OverconstrainedError' || name === 'ConstraintNotSatisfiedError') stream = await md.getUserMedia(RELAXED)

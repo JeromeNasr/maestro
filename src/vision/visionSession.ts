@@ -150,6 +150,10 @@ export class VisionSession {
     if (!el || typeof el.requestVideoFrameCallback !== 'function') return
     const cb = (_t: number, meta: VideoFrameCallbackMetadata) => {
       this.captureMs = typeof meta.captureTime === 'number' ? meta.captureTime : null
+      // A new camera frame exists NOW: start detecting it immediately instead of waiting for the next 60 Hz tick (saves up to
+      // 16 ms of latency per frame and the polling). The loop's own tick stays as the fallback and skips frames already taken.
+      const s = this.store.get()
+      if (s.status === 'running' && s.source === 'camera' && !this.disposed) this.runFrame()
       if (this.rvfc?.el === el) this.rvfc.id = el.requestVideoFrameCallback(cb)
     }
     this.rvfc = { el, id: el.requestVideoFrameCallback(cb) }

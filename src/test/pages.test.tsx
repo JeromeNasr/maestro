@@ -14,8 +14,11 @@ beforeEach(() => {
   installStudioEnv()
 })
 
-function renderAt(path: string) {
-  return render(<RouterProvider router={createMemoryRouter(routes, { initialEntries: [path] })} />)
+/** Renders a route and waits for it (the pages are lazy-loaded). */
+async function renderAt(path: string) {
+  const r = render(<RouterProvider router={createMemoryRouter(routes, { initialEntries: [path] })} />)
+  await screen.findByRole('heading', { level: 1 })
+  return r
 }
 
 describe('routing & navigation', () => {
@@ -32,8 +35,8 @@ describe('routing & navigation', () => {
     expect(await screen.findByRole('heading', { level: 1, name: heading })).toBeInTheDocument()
   })
 
-  it('exposes the primary navigation', () => {
-    renderAt('/')
+  it('exposes the primary navigation', async () => {
+    await renderAt('/')
     const nav = screen.getByRole('navigation', { name: 'Primary' })
     for (const l of ['Library', 'Studio', 'Academy', 'Orchestra', 'Analytics']) expect(within(nav).getByRole('link', { name: l })).toBeInTheDocument()
   })
@@ -41,7 +44,7 @@ describe('routing & navigation', () => {
 
 describe('Library', () => {
   it('filters by search and reports the count', async () => {
-    renderAt('/library')
+    await renderAt('/library')
     await userEvent.type(screen.getByRole('searchbox'), 'handel')
     expect(screen.getByRole('article', { name: /water music/i })).toBeInTheDocument()
     expect(screen.queryByRole('article', { name: /brandenburg/i })).not.toBeInTheDocument()
@@ -49,13 +52,13 @@ describe('Library', () => {
   })
 
   it('shows an empty state when nothing matches', async () => {
-    renderAt('/library')
+    await renderAt('/library')
     await userEvent.type(screen.getByRole('searchbox'), 'qqqq')
     expect(screen.getByText(/no compositions match/i)).toBeInTheDocument()
   })
 
   it('disables planned compositions and lets an available one be selected', async () => {
-    renderAt('/library')
+    await renderAt('/library')
     const planned = screen.getByRole('article', { name: /water music/i })
     expect(within(planned).getByRole('button')).toBeDisabled()
     const demo = screen.getByRole('article', { name: /aurora/i })
@@ -67,7 +70,7 @@ describe('Library', () => {
 describe('Studio', () => {
   it('does not request the camera or start audio on load', async () => {
     const { getUserMedia } = installStudioEnv()
-    renderAt('/studio')
+    await renderAt('/studio')
     await screen.findByRole('heading', { level: 1, name: /aurora/i })
     expect(getUserMedia).not.toHaveBeenCalled()
     const { instances } = await import('./fakeToneBackend')
@@ -75,7 +78,7 @@ describe('Studio', () => {
   })
 
   it('every visible control is enabled or has a stated reason for being disabled', async () => {
-    renderAt('/studio')
+    await renderAt('/studio')
     await screen.findByRole('heading', { level: 1, name: /aurora/i })
     await waitFor(() => expect(screen.getByRole('button', { name: 'Start' })).toBeEnabled())
     expect(screen.getByRole('button', { name: 'Enable camera' })).toBeEnabled()
@@ -88,7 +91,7 @@ describe('Studio', () => {
   })
 
   it('shows no fabricated live values before anything is conducted', async () => {
-    renderAt('/studio')
+    await renderAt('/studio')
     await screen.findByRole('heading', { level: 1, name: /aurora/i })
     for (const id of ['readout-your-tempo', 'readout-music-tempo', 'readout-position', 'readout-tracking']) expect(screen.getByTestId(id)).toHaveTextContent('—')
   })
@@ -98,14 +101,14 @@ describe('Studio', () => {
 
 describe('Academy', () => {
   it('switches lessons and shows a pattern demo', async () => {
-    renderAt('/academy')
+    await renderAt('/academy')
     await userEvent.click(await screen.findByRole('button', { name: /4\/4 — conducting in four/i }))
     expect(screen.getByRole('heading', { level: 2, name: /4\/4/ })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /4\/4 conducting pattern: Down, Left, Right, Up/ })).toBeInTheDocument()
   })
 
   it('dynamics demo maps the slider to a marking', async () => {
-    renderAt('/academy')
+    await renderAt('/academy')
     await userEvent.click(await screen.findByRole('button', { name: /Dynamics, crescendo and diminuendo/ }))
     expect(screen.getByTestId('dynamic-mark')).toHaveTextContent('mf')
   })
@@ -113,14 +116,14 @@ describe('Academy', () => {
 
 describe('navigation behaviour', () => {
   it('updates the document title per route', async () => {
-    renderAt('/library')
+    await renderAt('/library')
     expect(document.title).toBe('Library — MAESTRO')
     await userEvent.click(screen.getByRole('navigation', { name: 'Primary' }).querySelector('a[href="/academy"]')!)
     expect(document.title).toBe('Conducting Academy — MAESTRO')
   })
 
-  it('has no live region wrapping the animated lesson content', () => {
-    const { container } = renderAt('/academy')
+  it('has no live region wrapping the animated lesson content', async () => {
+    const { container } = await renderAt('/academy')
     expect(container.querySelector('article[aria-live]')).toBeNull()
   })
 })

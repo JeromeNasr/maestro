@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+import { downgradeIfAuto, watchFramePacing } from '@/lib/perf'
 import { BatonPanel } from '@/components/studio/BatonPanel'
 import { CameraPanel } from '@/components/studio/CameraPanel'
 import { ConductingPanel } from '@/components/studio/ConductingPanel'
@@ -16,6 +18,8 @@ import { useConductingSession, useStudio } from '@/components/studio/useConducti
 export function Studio() {
   const session = useConductingSession()
   const s = useStudio(session)
+  // If the page cannot keep up, switch to Lite once (only in Auto) and say so.
+  useEffect(() => watchFramePacing(() => { if (downgradeIfAuto()) session.notify('This device is struggling, so MAESTRO switched to Lite mode (smaller camera image, no decoration). Change it in the footer of any other page.') }), [session])
   return (
     <section className="mx-auto max-w-[1500px] px-4 py-6 pb-28 sm:px-6">
       <StudioHeader session={session} />

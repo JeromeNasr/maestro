@@ -65,7 +65,7 @@ export function MixerPanel({ session }: { session: ConductingSession }) {
               </div>
               <div className="mt-1.5 flex items-center gap-2 pl-[92px]">
                 <div className="h-1.5 flex-1 overflow-hidden rounded-sm bg-ink-700" role="meter" aria-label={`${s.label} output level`} aria-valuemin={0} aria-valuemax={1} aria-valuenow={Number(level.toFixed(3))}>
-                  <div className="h-full bg-bronze transition-[width] duration-100" style={{ width: `${Math.round(level * 100)}%` }} />
+                  <div className="bar h-full w-full bg-bronze" style={{ transform: `scaleX(${Math.round(level * 100) / 100})` }} />
                 </div>
                 {audio.loaded && !used.has(s.id) && <span className="text-[10px] text-ivory-mute">not in this piece</span>}
               </div>

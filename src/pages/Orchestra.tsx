@@ -1,16 +1,18 @@
+import { Reveal } from '@/components/fx/Reveal'
+import { SolfegeKeys } from '@/components/fx/SolfegeKeys'
+import { noteName } from '@/lib/notes'
 import { FAMILIES, FUN_FACTS, WARDROBE, type InstrumentLore } from '@/orchestra/lore'
 
 const LO = 24 // C1
 const HI = 108 // C8
 const OCTAVES = [24, 36, 48, 60, 72, 84, 96, 108]
-const NOTE = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B']
-const noteName = (m: number) => `${NOTE[m % 12]}${Math.floor(m / 12) - 1}`
+const nm = (m: number) => noteName(m, { flats: true })
 
 /** The usual sounding range of an instrument drawn along a seven-octave line (C1–C8). */
 function RangeStrip({ range, label }: { range: [number, number]; label: string }) {
   const x = (m: number) => ((m - LO) / (HI - LO)) * 100
   return (
-    <svg viewBox="0 0 100 9" preserveAspectRatio="none" className="mt-3 h-[22px] w-full" role="img" aria-label={`${label}: about ${noteName(range[0])} to ${noteName(range[1])}`}>
+    <svg viewBox="0 0 100 9" preserveAspectRatio="none" className="mt-3 h-[22px] w-full" role="img" aria-label={`${label}: about ${nm(range[0])} to ${nm(range[1])}`}>
       <line x1="0" x2="100" y1="4.5" y2="4.5" stroke="#f3ecdc" strokeOpacity=".15" strokeWidth=".5" vectorEffect="non-scaling-stroke" />
       {OCTAVES.map((m) => (
         <line key={m} x1={x(m)} x2={x(m)} y1={m === 60 ? 0.5 : 2.5} y2={m === 60 ? 8.5 : 6.5} stroke="#f3ecdc" strokeOpacity={m === 60 ? 0.5 : 0.22} strokeWidth=".5" vectorEffect="non-scaling-stroke" />
@@ -27,7 +29,7 @@ function Instrument({ i }: { i: InstrumentLore }) {
         <h4 className="font-serif text-2xl">{i.name}</h4>
         {i.range ? (
           <p className="mt-1 text-xs tabular-nums text-ivory-mute">
-            {noteName(i.range[0])} – {noteName(i.range[1])}
+            {nm(i.range[0])} – {nm(i.range[1])}
           </p>
         ) : (
           <p className="mt-1 text-xs text-ivory-mute">unpitched</p>
@@ -113,7 +115,7 @@ export function Orchestra() {
 
         <div className="min-w-0 space-y-24">
           {FAMILIES.map((f) => (
-            <section key={f.id} id={f.id} aria-labelledby={`h-${f.id}`} className="scroll-mt-28">
+            <Reveal as="section" key={f.id} id={f.id} aria-labelledby={`h-${f.id}`} className="scroll-mt-28">
               <header className="max-w-2xl">
                 <p className="font-serif text-6xl leading-none text-gold-deep">{f.numeral}</p>
                 <h2 id={`h-${f.id}`} className="mt-2 text-5xl">{f.title}</h2>
@@ -122,9 +124,16 @@ export function Orchestra() {
               <ul className="mt-10 border-b hairline">
                 {f.instruments.map((i) => <Instrument key={i.name} i={i} />)}
               </ul>
-              {f.id === 'strings' && <p className="mt-3 text-xs text-ivory-mute">The gold bar on each line is the usual sounding range, drawn along seven octaves from C1 to C8; the tall tick marks middle C. Ranges are approximate.</p>}
-            </section>
+              {f.id === 'strings' && <p className="mt-3 text-xs text-ivory-mute">The gold bar on each line is the usual sounding range, drawn along seven octaves from Do1 to Do8; the tall tick marks middle Do (Do4). Ranges are approximate.</p>}
+            </Reveal>
           ))}
+
+          <Reveal as="section" id="notes" aria-labelledby="h-notes" className="scroll-mt-28">
+            <p className="eyebrow">Play with it</p>
+            <h2 id="h-notes" className="mt-2 text-5xl">Do, Re, Mi…</h2>
+            <p className="mt-4 max-w-2xl leading-relaxed text-ivory-dim">Musicians in much of the world name notes with syllables instead of letters. Try the scale below; every instrument in the orchestra uses the same names.</p>
+            <div className="mt-6 max-w-2xl"><SolfegeKeys /></div>
+          </Reveal>
 
           <section id="wardrobe" aria-labelledby="h-wardrobe" className="scroll-mt-28">
             <p className="font-serif text-6xl leading-none text-gold-deep">V</p>

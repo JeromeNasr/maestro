@@ -1,3 +1,4 @@
+import { isLite } from '@/lib/perf'
 import { useEffect, useRef } from 'react'
 import { StatusTag } from '@/components/ui/StatusTag'
 import { gestureSettings } from '@/config/settings'
@@ -41,8 +42,11 @@ export function CameraPanel({ conducting }: { conducting: ConductingSession }) {
         drawBaton(ctx, c.width, c.height, cur, session.baton, showMaskRef.current)
       }
     }
+    let skip = false
     const loop = () => {
-      if (cur) paint()
+      // Lite mode redraws the overlay every other display frame
+      skip = isLite() ? !skip : false
+      if (cur && !skip) paint()
       raf = requestAnimationFrame(loop)
     }
     const unsub = session.onFrame((frame) => {

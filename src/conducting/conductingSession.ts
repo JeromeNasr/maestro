@@ -379,7 +379,7 @@ export class ConductingSession {
     this.patch({ summary: rec, summaryNote: null })
   }
 
-  private notify(msg: string) {
+  notify(msg: string) {
     this.patch({ notice: msg })
   }
   private patch(p: Partial<StudioSnapshot>) {

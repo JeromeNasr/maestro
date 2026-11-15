@@ -8,6 +8,7 @@ import { BatonGripDemo } from '@/components/academy/BatonGripDemo'
 import { DynamicsDemo } from '@/components/academy/DynamicsDemo'
 import { FrameGuide } from '@/components/academy/FrameGuide'
 import { PatternDemo } from '@/components/academy/PatternDemo'
+import { MetronomeDemo } from '@/components/academy/MetronomeDemo'
 import { Quiz } from '@/components/academy/Quiz'
 import { StageDemo } from '@/components/academy/StageDemo'
 import { TapTempoExercise } from '@/components/academy/TapTempoExercise'
@@ -17,7 +18,7 @@ import { useStore } from '@/lib/store'
 
 function Demo({ kind }: { kind: DemoKind }) {
   if (kind.startsWith('pattern-')) return <PatternDemo key={kind} timeSignature={kind.slice(8) as TimeSignature} />
-  if (kind === 'tempo') return <PatternDemo key="tempo" timeSignature="4/4" />
+  if (kind === 'tempo') return <div className="space-y-6"><MetronomeDemo /><PatternDemo key="tempo" timeSignature="4/4" /></div>
   if (kind === 'frame') return <FrameGuide />
   if (kind === 'baton-grip') return <BatonGripDemo />
   if (kind === 'baton-articulation') return <ArticulationDemo />

@@ -1,5 +1,6 @@
 import { SECTIONS, type SectionId } from '@/orchestra/sections'
 import type { AudioBackend, BackendInfo, LoadProgress } from './backend'
+import { isLite } from '@/lib/perf'
 import { DEFAULT_INSTRUMENT, INSTRUMENTS, SAMPLE_SET_OF, instrumentInfo, type InstrumentId } from './instruments'
 import { midiToHz } from './pitch'
 import { layerIndex, nearestDrum, nearestSample, playbackRate, velocityGain, type BankEntry, type HitVoice, type SampleManifest, type SustainedSample } from './sampleBank'
@@ -21,6 +22,9 @@ const FLUSH_AHEAD_S = 0.07
 /** Overall make-up gain before the limiter (samples are normalised to −20 dBFS RMS per voice). */
 const MAKEUP_GAIN = 2.2
 const MAX_VOICES_PER_INSTRUMENT = 22
+const MAX_VOICES_LITE = 12
+/** Lite renders at 24 kHz: the decoded samples take half the memory and every node half the work (content above 12 kHz is lost). */
+const LITE_SAMPLE_RATE = 24000
 const LOAD_CONCURRENCY = 4
 const SECTION_REVERB: Record<SectionId, number> = { strings: 0.5, woodwinds: 0.55, brass: 0.7, percussion: 0.85 }
 
@@ -110,6 +114,7 @@ export class SampledBackend implements AudioBackend {
   private epoch = 0
   private meterBuf: Float32Array<ArrayBuffer> = new Float32Array(1024)
   private decodedBytes = 0
+  private lite = false
 
   constructor(private opts: SampledBackendOptions = {}) {}
 
@@ -132,7 +137,12 @@ export class SampledBackend implements AudioBackend {
     this.cacheName = `maestro-samples-${this.manifest.build ?? this.manifest.source.commit.slice(0, 8)}`
     void this.pruneOldCaches()
 
-    const ctx = this.opts.contextFactory ? this.opts.contextFactory() : new Ctor!({ latencyHint: 'interactive' })
+    this.lite = isLite()
+    const ctx = this.opts.contextFactory
+      ? this.opts.contextFactory()
+      : this.lite
+        ? new Ctor!({ latencyHint: 'balanced', sampleRate: LITE_SAMPLE_RATE })
+        : new Ctor!({ latencyHint: 'interactive' })
     this.ctx = ctx
     try {
       await ctx.resume() // must follow a user gesture, otherwise the browser leaves it suspended
@@ -190,12 +200,15 @@ export class SampledBackend implements AudioBackend {
     this.master.gain.value = 0.8
     this.master.connect(this.gate)
 
-    const hall = this.track(ctx.createConvolver())
-    hall.buffer = makeHallImpulse(ctx)
-    const hallReturn = this.track(ctx.createGain())
-    hallReturn.gain.value = 0.3
-    hall.connect(hallReturn)
-    hallReturn.connect(this.master)
+    // The convolution hall is the single most expensive node in the graph; Lite plays dry.
+    const hall = this.lite ? null : this.track(ctx.createConvolver())
+    if (hall) {
+      hall.buffer = makeHallImpulse(ctx)
+      const hallReturn = this.track(ctx.createGain())
+      hallReturn.gain.value = 0.3
+      hall.connect(hallReturn)
+      hallReturn.connect(this.master)
+    }
 
     for (const { id } of SECTIONS) {
       const filter = this.track(ctx.createBiquadFilter())
@@ -212,7 +225,7 @@ export class SampledBackend implements AudioBackend {
       gain.connect(this.master)
       gain.connect(meter)
       gain.connect(send)
-      send.connect(hall)
+      if (hall) send.connect(hall)
       this.secFilter.set(id, filter)
       this.secGain.set(id, gain)
       this.secMeter.set(id, meter)
@@ -312,7 +325,7 @@ export class SampledBackend implements AudioBackend {
     g.connect(this.instBus.get(inst)!)
     // Voice stealing: never more than N per instrument, the oldest one is released quickly.
     const same = this.voices.filter((v) => v.inst === inst)
-    if (same.length >= MAX_VOICES_PER_INSTRUMENT) this.release(same[0], time)
+    if (same.length >= (this.lite ? MAX_VOICES_LITE : MAX_VOICES_PER_INSTRUMENT)) this.release(same[0], time)
     const voice: Voice = { src, gain: g, inst, endsAt }
     this.voices.push(voice)
     src.onended = () => {

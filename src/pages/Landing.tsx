@@ -1,3 +1,5 @@
+import { FloatingNotes } from '@/components/fx/FloatingNotes'
+import { Reveal } from '@/components/fx/Reveal'
 import { Link } from 'react-router'
 import { COMPOSITIONS } from '@/library/compositions'
 import { CompositionCard } from '@/components/ui/CompositionCard'
@@ -27,8 +29,9 @@ function Pattern() {
 export function Landing() {
   return (
     <>
-      <section className="border-b hairline">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 pb-24 pt-20 sm:px-6 sm:pt-28 lg:grid-cols-[1.35fr_1fr] lg:items-center">
+      <section className="relative border-b hairline">
+        <FloatingNotes />
+        <div className="relative mx-auto grid max-w-7xl gap-10 px-4 pb-24 pt-20 sm:px-6 sm:pt-28 lg:grid-cols-[1.35fr_1fr] lg:items-center">
           <div>
             <p className="smallcaps text-base text-gold">A virtual orchestra for your two hands</p>
             <h1 className="mt-6 text-6xl leading-[0.92] sm:text-8xl">
@@ -51,7 +54,7 @@ export function Landing() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-4 py-24 sm:px-6">
+      <Reveal as="section" className="mx-auto max-w-5xl px-4 py-24 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <h2 className="text-5xl">Tonight’s programme</h2>
           <Link to="/library" className="text-sm text-ivory-dim underline decoration-gold/50 underline-offset-4 hover:text-ivory">See the whole library ({COMPOSITIONS.filter((c) => c.status === 'available').length} pieces)</Link>
@@ -62,7 +65,7 @@ export function Landing() {
         <div className="mt-10 border-b hairline">
           {COMPOSITIONS.filter((c) => c.status === 'available').slice(0, 5).map((c, i) => <CompositionCard key={c.id} composition={c} number={i + 1} />)}
         </div>
-      </section>
+      </Reveal>
 
       <section className="border-y hairline bg-ink-900/60">
         <div className="mx-auto grid max-w-5xl gap-x-16 gap-y-8 px-4 py-24 sm:px-6 md:grid-cols-[1fr_1.2fr]">
@@ -80,7 +83,7 @@ export function Landing() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6">
+      <Reveal as="section" className="mx-auto max-w-7xl px-4 py-24 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <h2 className="text-5xl">Meet the orchestra</h2>
           <Link to="/orchestra" className="text-sm text-ivory-dim underline decoration-gold/50 underline-offset-4 hover:text-ivory">Instruments, seating and what the maestro wears</Link>
@@ -96,7 +99,7 @@ export function Landing() {
             </li>
           ))}
         </ul>
-      </section>
+      </Reveal>
 
       <section className="border-t hairline px-4 py-28 text-center sm:px-6">
         <p className="font-serif text-4xl italic text-ivory-dim">The orchestra is waiting for the first beat.</p>

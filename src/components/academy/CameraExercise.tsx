@@ -80,7 +80,7 @@ export function CameraExercise({ lessonId, def }: { lessonId: string; def: Exerc
       {live?.kind === 'dynamics' && (
         <div role="status" className="text-sm text-ivory-dim" data-testid="exercise-live">
           Show <span className="font-serif text-xl italic text-gold">{live.state.targets[live.state.index]}</span> and hold ({live.state.reached}/{live.state.targets.length} done)
-          <div className="mt-2 h-1.5 max-w-xs overflow-hidden rounded-sm bg-ink-600"><div className="h-full bg-gold transition-[width] duration-100" style={{ width: `${live.state.holdProgress * 100}%` }} /></div>
+          <div className="mt-2 h-1.5 max-w-xs overflow-hidden rounded-sm bg-ink-600"><div className="bar h-full w-full bg-gold" style={{ transform: `scaleX(${live.state.holdProgress})` }} /></div>
         </div>
       )}
       {outcome && (

@@ -433,3 +433,25 @@ describe('GestureEngine — a stalled page is not a slowdown', () => {
     expect(Math.min(...around.map((x) => x.bpm))).toBeGreaterThan(90) // 100 BPM held, no dip
   })
 })
+
+describe('GestureEngine — dropped detections mid-stroke', () => {
+  // The detector often loses a fast hand for a frame or two. Each such frame used to abort the stroke and cost its beat
+  // (measured: 10 % random dropouts at 30 fps found 41 % of the beats and left the tempo 24 BPM off).
+  const hash = (t: number) => {
+    const x = Math.sin(t * 12.9898) * 43758.5453
+    return x - Math.floor(x)
+  }
+  const run = (fps: number, p: number, bpm: number, style: 'bounce' | 'flowing') =>
+    simulate({ demo: { bpm, timeSignature: '4/4', style, noise: 0.005, handSize: 0.1, visible: (s, t) => s !== 'right' || hash(Math.round(t * fps)) > p }, seconds: 40, fps })
+  it.each([[30, 0.1], [30, 0.2], [12, 0.1]])('%i fps with %f of the frames dropped: nearly every beat is still found, and the tempo is right', (fps, p) => {
+    for (const style of ['bounce', 'flowing'] as const) {
+      const r = run(fps, p, 100, style)
+      expect(r.beats.length, `${style}`).toBeGreaterThan(40 * (100 / 60) * 0.8)
+      expect(Math.abs((r.tempos.at(-1)?.bpm ?? 0) - 100), `${style}`).toBeLessThan(2.5)
+    }
+  })
+  it('a hand really gone for over a second still stops the stroke (no beats are invented)', () => {
+    const r = simulate({ demo: { bpm: 100, visible: (s, t) => s !== 'right' || t < 10 || t > 14 }, seconds: 20 })
+    expect(r.beats.filter((b) => b.timestampMs > 10500 && b.timestampMs < 13800)).toHaveLength(0)
+  })
+})

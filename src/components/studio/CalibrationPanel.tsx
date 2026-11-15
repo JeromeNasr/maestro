@@ -36,7 +36,7 @@ export function CalibrationPanel({ state, onCancel, onRetry }: Props) {
       )}
       {!done && !failed && (
         <div className="mt-3 h-1.5 overflow-hidden rounded-sm bg-ink-600" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(state.progress * 100)} aria-label="Calibration step progress">
-          <div className="h-full bg-gold transition-all duration-150" style={{ width: `${Math.round(state.progress * 100)}%` }} />
+          <div className="bar h-full w-full bg-gold" style={{ transform: `scaleX(${Math.round(state.progress * 100) / 100})` }} />
         </div>
       )}
       <div className="mt-3 flex gap-2">

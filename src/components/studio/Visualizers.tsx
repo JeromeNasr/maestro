@@ -45,7 +45,7 @@ export function SectionLevels({ levels }: { levels: Record<string, number> }) {
         <li key={s.id} className="flex items-center gap-2">
           <span className="w-[72px] shrink-0 text-[11px] text-ivory-mute">{s.label}</span>
           <div className="h-3 min-w-0 flex-1 rounded-sm bg-ink-700">
-            <div className="h-full rounded-sm bg-bronze transition-[width] duration-100" style={{ width: `${Math.round((levels[s.id] ?? 0) * 100)}%` }} />
+            <div className="bar h-full w-full rounded-sm bg-bronze" style={{ transform: `scaleX(${Math.round((levels[s.id] ?? 0) * 100) / 100})` }} />
           </div>
         </li>
       ))}

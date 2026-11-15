@@ -47,6 +47,8 @@ export class GestureEngine {
   private rightLastSeenMs: number | null = null
   /** A right hand has been seen since the last reset: after that, a lone left hand is the dynamics hand again, not a beat hand. */
   private rightEverSeen = false
+  /** The last real (measured) sample given to the stroke segmenter, for carrying a stroke through a dropped detection. */
+  private lastFed: { pos: V2; vel: V2; t: number } | null = null
   /** The beat is currently read from the baton tip rather than the palm. */
   private batonActive = false
   /** Tempo implied by a beat that is overdue (see `overdueTempo`); null while beats arrive on time. */
@@ -103,6 +105,7 @@ export class GestureEngine {
     this.handSize = null
     this.rightLastSeenMs = null
     this.rightEverSeen = false
+    this.lastFed = null
     this.batonActive = false
     this.overdueBpm = null
     this.stalledSinceBeat = false
@@ -253,8 +256,17 @@ export class GestureEngine {
 
   private right(hand: TrackedHand | null, t: number, cfg: GestureConfig, events: ConductingEvent[]) {
     if (!hand || hand.status !== 'tracking') {
-      // Lost or only a stale "held" pose: a frozen hand has zero velocity and must not be read as a stop. Drop any
-      // stroke in progress; the pattern/tempo state is kept for a while so brief tracking loss is harmless.
+      // A frame or two in which the detector lost the hand (common on fast strokes: motion blur) must not cost a beat. While the
+      // hand is only 'held', the stroke is carried on along its last velocity (a frozen pose would read as a STOP, which is
+      // why the raw held pose is never used). Past ~200 ms, or when the hand is really gone, the stroke is dropped; the
+      // pattern/tempo state is kept for a while so a brief loss is harmless.
+      const f = this.lastFed
+      if (hand && hand.status === 'holding' && f && this.segmenter.active && t - f.t <= 200) {
+        const dt = (t - f.t) / 1000
+        const stroke = this.segmenter.update({ tMs: t, pos: { x: f.pos.x + f.vel.x * dt, y: f.pos.y + f.vel.y * dt }, vel: f.vel })
+        if (stroke) this.evaluate(stroke, hand, t, cfg, events)
+        return
+      }
       this.segmenter.abort()
       return
     }
@@ -265,7 +277,8 @@ export class GestureEngine {
       if (gap > Math.max(cfg.beat.patternResetGapMs, 2.5 * interval)) {
         this.pattern.reset()
         this.breakChain()
-      } else if (gap > 150) {
+      } else if (gap > Math.max(300, 0.6 * interval)) {
+        // (a gap of a few frames — dropped detections — keeps the beat chain; only a real absence breaks it)
         this.breakChain()
       }
     }
@@ -275,6 +288,7 @@ export class GestureEngine {
     const hs = Math.max(0.03, this.handSize)
     const pos: V2 = { x: (hand.palm.x * this.aspect) / hs, y: hand.palm.y / hs }
     const vel: V2 = { x: (hand.kinematics.velocity.x * this.aspect) / hs, y: hand.kinematics.velocity.y / hs }
+    this.lastFed = { pos, vel, t }
     const stroke = this.segmenter.update({ tMs: t, pos, vel })
     if (stroke) this.evaluate(stroke, hand, t, cfg, events)
   }

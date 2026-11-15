@@ -56,3 +56,8 @@ Still needs ears: the instrument balance, the quality of the sustain loops, timp
 * Put a vivid marker (not skin-coloured) on the tip, enable Baton, pick it in the preview: is the "tip found" confidence steady? Does "Show what it sees" paint ONLY the marker (not a shirt, a plant, your hand)?
 * Conduct 4/4: do the beats match those from your hand? Does it help or hurt when the marker turns away or is hidden by your fist (it should fall back to the hand without a tempo jump)?
 * Try a lamp on/off and a window: does the match percentage stay small and the tip stay found? If not, adjust tolerance or choose a different marker.
+
+## Lite mode and motion (manual checks; none done on real weak hardware)
+- Footer → Performance → Lite: the paper texture, blur and drifting notes disappear; Studio camera drops to 320×240.
+- OS "reduce motion" on: no drifting notes, reveals or confetti.
+- Academy → pass a quiz: "Bravo!" burst. Academy → Tempo lesson: metronome swings; Click makes sound. Orchestra → "Do, Re, Mi…": keys (or A S D F G H J K) sound the scale, La = 440 Hz.

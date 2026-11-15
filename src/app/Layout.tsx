@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, ScrollRestoration, useLocation } from 'react-router'
 import { Logo } from '@/components/ui/Logo'
+import { perfMode, perfSetting, type PerfSetting } from '@/lib/perf'
+import { useStore } from '@/lib/store'
 
 const NAV = [
   { to: '/library', label: 'Library' },
@@ -26,6 +28,10 @@ export function Layout() {
   const [open, setOpen] = useState(false)
   const { pathname } = useLocation()
   const studio = pathname === '/studio'
+  const mode = useStore(perfMode)
+  useEffect(() => {
+    document.documentElement.dataset.perf = mode
+  }, [mode])
   useEffect(() => {
     const t = TITLES[pathname]
     document.title = t ? `${t} — MAESTRO` : 'Page not found — MAESTRO'
@@ -68,7 +74,9 @@ export function Layout() {
         )}
       </header>
       <main id="main" className="flex-1">
-        <Outlet />
+        <div key={pathname} className="page-enter">
+          <Outlet />
+        </div>
       </main>
       {!studio && <Footer />}
       <ScrollRestoration />
@@ -79,7 +87,7 @@ export function Layout() {
 function Footer() {
   return (
     <footer className="border-t hairline">
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-3">
+      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-4">
         <div>
           <Logo />
           <p className="mt-3 max-w-xs text-sm text-ivory-mute">Conduct Your Own Orchestra. A university computer-engineering project.</p>
@@ -87,6 +95,9 @@ function Footer() {
         <div className="text-sm text-ivory-dim">
           <p className="eyebrow mb-3">Privacy</p>
           <p>Camera frames are processed locally in your browser and are never uploaded. There is no backend.</p>
+        </div>
+        <div className="text-sm text-ivory-dim">
+          <PerfSelector />
         </div>
         <div className="text-sm text-ivory-dim">
           <p className="eyebrow mb-3">Explore</p>
@@ -98,5 +109,24 @@ function Footer() {
         </div>
       </div>
     </footer>
+  )
+}
+
+const PERF_LABEL: Record<PerfSetting, string> = { auto: 'Auto', full: 'Full', lite: 'Lite' }
+function PerfSelector() {
+  const setting = useStore(perfSetting)
+  const mode = useStore(perfMode)
+  return (
+    <>
+      <p className="eyebrow mb-3">Performance</p>
+      <div role="radiogroup" aria-label="Performance mode" className="inline-flex overflow-hidden rounded-sm border hairline">
+        {(['auto', 'full', 'lite'] as const).map((v) => (
+          <button key={v} type="button" role="radio" aria-checked={setting === v} onClick={() => perfSetting.set(v)} className={`px-3 py-1.5 text-xs transition-colors ${setting === v ? 'bg-gold text-ink-950' : 'text-ivory-dim hover:text-ivory'}`}>
+            {PERF_LABEL[v]}
+          </button>
+        ))}
+      </div>
+      <p className="mt-2 text-xs text-ivory-mute">Now: {mode === 'lite' ? 'Lite — no decoration, smaller camera image, lighter audio.' : 'Full.'} Choose Lite on a slow device.</p>
+    </>
   )
 }
