@@ -25,9 +25,27 @@ const TEMPLATE: ReadonlyArray<readonly [number, number]> = [
  * Build 21 landmarks in DISPLAY space with the palm centre at (cx, cy).
  * `size` is the wrist→middle-base distance in normalised y units; x is scaled by 1/aspect so the hand keeps its shape.
  */
-export function makeHandLandmarks(cx: number, cy: number, size: number, side: Side, aspect = 4 / 3): Landmark[] {
+/**
+ * `pose`: how many fingers (0–4, index first) are held up with the thumb TUCKED across the palm; the others are curled.
+ * Omitted = the natural open hand with the thumb out.
+ */
+export function makeHandLandmarks(cx: number, cy: number, size: number, side: Side, aspect = 4 / 3, pose?: number): Landmark[] {
   const flip = side === 'left' ? -1 : 1
-  const pts: Landmark[] = TEMPLATE.map(([lx, ly]) => ({ x: (lx * flip * size) / aspect, y: ly * size, z: 0 }))
+  const tpl = TEMPLATE.map(([x, y]) => [x, y] as [number, number])
+  if (pose !== undefined && pose >= 0) {
+    for (let f = 0; f < 4; f++) {
+      if (f < pose) continue
+      const base = 5 + 4 * f
+      const [mx, my] = tpl[base]
+      tpl[base + 1] = [mx, my - 0.32] // PIP
+      tpl[base + 2] = [mx, my - 0.2] // DIP, folded back
+      tpl[base + 3] = [mx, my - 0.1] // tip, near the knuckle
+    }
+    tpl[2] = [-0.5, -0.45]
+    tpl[3] = [-0.3, -0.65]
+    tpl[4] = [0.05, -0.85] // thumb tip across the palm, next to the middle knuckle
+  }
+  const pts: Landmark[] = tpl.map(([lx, ly]) => ({ x: (lx * flip * size) / aspect, y: ly * size, z: 0 }))
   const c = palmCenter(pts)
   return pts.map((p) => ({ x: p.x - c.x + cx, y: p.y - c.y + cy, z: 0 }))
 }
@@ -58,6 +76,8 @@ export interface DemoOptions {
   /** Detector score reported for the hands (0–1). */
   score: number
   /** 'mediapipe-raw' (default): labels inverted like MediaPipe does for an un-mirrored frame. 'as-user': labels equal the user's side. */
+  /** Left-hand finger pose over time: fingers held up (0 = fist … 4) with the thumb tucked; negative = natural open hand. */
+  leftPose?: Num
   /** Wrist → middle-base distance in image heights (default 0.16; a real hand at arm's length is nearer 0.09–0.12). */
   handSize?: number
   labelModel?: 'mediapipe-raw' | 'as-user'
@@ -102,6 +122,7 @@ export class DemoSource {
   // Live controls (used by the Studio's demo-conductor sliders).
   setBpm(bpm: Num) { this.opts.bpm = bpm }
   setLeftLevel(l: Num | 'wave') { this.opts.leftLevel = l }
+  setLeftPose(p: number | undefined) { this.opts.leftPose = p }
   setTimeSignature(ts: TimeSignature) { this.opts.timeSignature = ts; this.phase = 0 }
 
   /** Whether a hand is visible at time t. By default the right hand briefly drops out (0.15 s and 0.9 s per 20 s loop). */
@@ -147,7 +168,8 @@ export class DemoSource {
     for (const side of ['left', 'right'] as const) {
       if (!this.isVisible(side, t)) continue
       const p = this.opts.paths?.[side] ? this.palmAt(side, t) : side === 'right' ? this.rightPalmAtPhase(this.phase) : this.palmAt('left', t)
-      const display = makeHandLandmarks(p.x, p.y, this.opts.handSize ?? 0.16, side, this.opts.aspect)
+      const pose = side === 'left' && this.opts.leftPose !== undefined ? val(this.opts.leftPose, t) : -1
+      const display = makeHandLandmarks(p.x, p.y, this.opts.handSize ?? 0.16, side, this.opts.aspect, pose >= 0 ? pose : undefined)
       if (display.length !== LANDMARK_COUNT) continue
       const n = this.opts.noise
       hands.push({

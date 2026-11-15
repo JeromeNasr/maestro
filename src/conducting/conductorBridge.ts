@@ -1,6 +1,7 @@
 import type { TimeSignature } from '@/config/gestureConfig'
 import { beatsPerBar } from '@/gesture/directions'
 import type { ConductingEvent, CueKind, GestureSnapshot } from '@/gesture/types'
+import type { SectionId } from '@/orchestra/sections'
 
 export type TempoMode = 'follow' | 'fixed'
 export type TransportState = 'stopped' | 'playing' | 'paused' | 'finished'
@@ -11,6 +12,8 @@ export interface BridgeTarget {
   setTargetBpm(bpm: number): void
   /** 0 (pp) … 1 (ff). */
   setDynamicsLevel(level: number): void
+  /** Finger mixer: set one section's volume, 0 (off) … 1 (full). */
+  setSectionVolume?(section: SectionId, volume: number): void
 }
 
 export interface BridgeTransport {
@@ -53,6 +56,7 @@ export class ConductorBridge {
     for (const e of events) {
       if (e.type === 'tempo' && this.opts.tempoMode() === 'follow') this.target.setTargetBpm(e.bpm * this.opts.quartersPerBeat())
       else if (e.type === 'cue') this.cue(e.cue)
+      else if (e.type === 'mixer' && e.phase === 'level') this.target.setSectionVolume?.(e.section, e.volume)
     }
     this.target.setDynamicsLevel(snapshot.dynamics.level)
   }

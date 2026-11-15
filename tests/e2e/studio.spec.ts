@@ -254,3 +254,27 @@ test('Academy: a quiz is scored and persisted across a reload; tap-tempo is judg
   const r = await page.getByTestId('tap-result').textContent()
   expect(r).toMatch(/Your tempo \d+\.\d BPM/)
 })
+
+test('finger mixer: 3 fingers + hand to the bottom turns the brass off (real audio output), a fist lets go', async ({ page }) => {
+  await page.goto('/studio')
+  await page.getByRole('button', { name: 'Virtual conductor' }).click()
+  await page.getByRole('checkbox', { name: /tracking dropouts/ }).uncheck()
+  await page.getByRole('checkbox', { name: /waves by itself/ }).uncheck()
+  await page.getByRole('radio', { name: 'Fixed tempo' }).check()
+  await transport(page, 'Start').click()
+  await setRange(page, /Fixed tempo as a percentage/, 150)
+  await expect.poll(async () => (await beatsPlayed(page)) > 36, { timeout: 40_000 }).toBe(true) // the brass have entered
+  await setRange(page, /left hand height/, 0.5)
+  await page.getByLabel('Virtual conductor left hand pose').selectOption('3')
+  await expect(page.getByTestId('finger-mixer-status')).toContainText(/In your hand: Brass/, { timeout: 10_000 })
+  await expect(page.getByTestId('section-brass')).toHaveAttribute('data-held', 'true')
+  await setRange(page, /left hand height/, 0.02) // hand to the bottom
+  await expect(page.getByRole('slider', { name: 'Brass volume' })).toHaveValue('0', { timeout: 10_000 })
+  await expect(page.getByTestId('finger-mixer-status')).toContainText(/\(off\)/)
+  await expect.poll(() => level(page, 'Brass'), { timeout: 8000 }).toBeLessThan(0.03) // actually silent, measured at the output
+  expect(await level(page, 'Strings')).toBeGreaterThan(0.05) // the others keep playing
+  await page.getByLabel('Virtual conductor left hand pose').selectOption('0') // fist
+  await expect(page.getByTestId('section-brass')).not.toHaveAttribute('data-held', 'true', { timeout: 10_000 })
+  await setRange(page, /left hand height/, 0.9)
+  await expect(page.getByRole('slider', { name: 'Brass volume' })).toHaveValue('0') // let go: the hand no longer moves it
+})

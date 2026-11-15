@@ -186,6 +186,22 @@ describe('Studio — playback controls', () => {
   })
 })
 
+describe('Studio — finger mixer', () => {
+  it('explains the gesture, can be switched off, and says so when it is off', async () => {
+    await renderStudio()
+    expect(screen.getByTestId('finger-mixer-help')).toHaveTextContent(/thumb/i)
+    expect(screen.getByTestId('finger-mixer-help')).toHaveTextContent(/fist/i)
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Finger mixer' }))
+    expect(gestureSettings.get().mixer.enabled).toBe(false)
+    expect(screen.queryByTestId('finger-mixer-help')).not.toBeInTheDocument()
+    expect(screen.getByText(/sliders below still work/i)).toBeInTheDocument()
+  })
+  it('numbers the sections 1–4 to match the fingers', async () => {
+    await renderStudio()
+    SECTIONS.forEach((s, i) => expect(within(screen.getByTestId(`section-${s.id}`)).getByText(String(i + 1))).toBeInTheDocument())
+  })
+})
+
 describe('Studio — orchestra section controls', () => {
   it.each(SECTIONS.map((s) => [s.id, s.label] as const))('%s: mute, solo and volume change the audio graph', async (id, label) => {
     await renderStudio()

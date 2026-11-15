@@ -74,6 +74,7 @@ export function Landing() {
             <p>
               From there it is the ordinary craft of conducting: strokes down, left, right and up for four; the orchestra plays on the bounce at the bottom of each stroke. Keep a steady pulse and the tempo settles on it. Slow down, and it slows with you — never with a jolt.
             </p>
+            <p>Want the brass quieter, or the strings gone for a moment? Tuck your left thumb, show one to four fingers — strings, woodwinds, brass, percussion — and hold still; then raise or lower the hand for that section’s volume, and make a fist to let go.</p>
             <p>When you finish, the Analytics page shows how steady you were, and how often the camera could see you.</p>
           </div>
         </div>

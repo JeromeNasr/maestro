@@ -4,6 +4,7 @@ import type { HandFrame, TrackedHand } from '@/vision/types'
 import { CueDetector, type TransportHint } from './cueDetector'
 import { directionName, type V2 } from './directions'
 import { DynamicsTracker } from './dynamicsTracker'
+import { MixerGesture } from './mixerGesture'
 import type { VerticalRange } from './handLevel'
 import { PatternTracker } from './patternTracker'
 import { StrokeSegmenter, type StrokeCandidate } from './strokeSegmenter'
@@ -38,6 +39,7 @@ export class GestureEngine {
   private tempo: TempoEstimator
   private dynamics: DynamicsTracker
   private cues = new CueDetector()
+  private mixer = new MixerGesture()
 
   private transport: TransportHint = 'stopped'
   private aspect = 4 / 3
@@ -45,6 +47,8 @@ export class GestureEngine {
   private rightLastSeenMs: number | null = null
   /** A right hand has been seen since the last reset: after that, a lone left hand is the dynamics hand again, not a beat hand. */
   private rightEverSeen = false
+  /** Tempo implied by a beat that is overdue (see `overdueTempo`); null while beats arrive on time. */
+  private overdueBpm: number | null = null
   private lastBeat: { tMs: number; detectedMs: number; beatInBar: number; confidence: number } | null = null
   private beatCount = 0
   /** Consecutive accepted, in-order beats; an off-pattern stroke or a long gap breaks it. */
@@ -90,9 +94,11 @@ export class GestureEngine {
     this.tempo.reset()
     this.dynamics.reset()
     this.cues.reset()
+    this.mixer.reset()
     this.handSize = null
     this.rightLastSeenMs = null
     this.rightEverSeen = false
+    this.overdueBpm = null
     this.lastBeat = null
     this.beatCount = 0
     this.chain = 0
@@ -127,9 +133,16 @@ export class GestureEngine {
     if (frame.right?.status === 'tracking') this.rightEverSeen = true
     const lone = this.loneHand(frame, cfg)
     this.right(lone ?? frame.right, t, cfg, events)
+    if (events.some((e) => e.type === 'beat')) this.overdueBpm = null
+    else this.overdueTempo(frame, lone, t, events)
 
+    // The finger mixer takes the left hand: while a section is in it (or a pose is being held to grab one), ordinary dynamics
+    // and the two-hands cues are paused, so one hand never does two jobs at once.
+    const mixEvents = this.mixer.update(frame.left, t, ranges.left, this.aspect, cfg.mixer, cfg.dynamics)
+    events.push(...mixEvents)
+    const mixerBusy = this.mixer.busy
     const before = this.dynamics.reading
-    const dyn = this.dynamics.update(frame.left, t, ranges.left)
+    const dyn = this.dynamics.update(mixerBusy ? null : frame.left, t, ranges.left)
     if (dyn.mark !== this.lastDynMark || dyn.trend !== this.lastDynTrend) {
       if (this.lastDynMark !== null || dyn.mark !== before.mark || dyn.trend !== 'steady') {
         events.push({ type: 'dynamics', timestampMs: t, level: dyn.level, mark: dyn.mark, trend: dyn.trend })
@@ -138,7 +151,7 @@ export class GestureEngine {
       this.lastDynTrend = dyn.trend
     }
 
-    const cue = this.cues.update(frame, this.transport, cfg.cues, cfg.dynamics, ranges)
+    const cue = this.cues.update(mixerBusy ? { ...frame, left: null } : frame, this.transport, cfg.cues, cfg.dynamics, ranges)
     this.cueProgress = cue.progress
     if (cue.cue) events.push({ type: 'cue', timestampMs: t, cue: cue.cue.kind, source: cue.cue.source })
 
@@ -167,10 +180,30 @@ export class GestureEngine {
       rightConfidence: f?.right?.confidence ?? 0,
       leftConfidence: f?.left?.confidence ?? 0,
       cue: this.cueProgress,
+      mixer: this.mixer.reading,
       stats: { ...this.stats },
     }
     this.snapshotCache = snap
     return snap
+  }
+
+  /**
+   * Slowing down must be heard before the slow beat has even finished. When a beat is very late (more than 2.5 beats'
+   * time since the last one, so not a single missed beat), the music is already slower than the tempo we hold, so the implied tempo — one beat per time
+   * elapsed — is published as the beats keep not arriving. It never goes below 70 % of the held tempo (a conductor who just
+   * stops should not make the orchestra grind to a halt) and the next real beat takes over as usual.
+   */
+  private overdueTempo(frame: HandFrame, lone: TrackedHand | null, t: number, events: ConductingEvent[]) {
+    const tempo = this.tempo.state
+    const interval = this.tempo.intervalMs
+    if (!tempo || !interval || !this.lastBeat || this.chain < 4) return
+    if (!(lone ?? frame.right) || (lone ?? frame.right)?.status !== 'tracking') return
+    const elapsed = t - this.lastBeat.tMs
+    if (elapsed <= 2.5 * interval) return // one missed beat (2×) is normal and handled by the pattern tracker
+    const implied = Math.max(0.7 * tempo.bpm, 60000 / elapsed)
+    if (implied >= tempo.bpm || (this.overdueBpm !== null && Math.abs(implied - this.overdueBpm) / this.overdueBpm < 0.03)) return
+    this.overdueBpm = implied
+    events.push({ type: 'tempo', timestampMs: t, bpm: implied, rawBpm: implied, stability: tempo.stability ?? 0 })
   }
 
   /**

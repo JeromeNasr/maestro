@@ -58,7 +58,7 @@ const off: ConductingEvent = { type: 'stroke-rejected', timestampMs: 0, reason: 
 const snap = (mark = 'mf', o: Partial<GestureSnapshot> = {}): GestureSnapshot => ({
   timestampMs: 0, state: 'conducting', timeSignature: '4/4', beatInBar: 1, expectedBeat: 2, bpm: 90, rawBpm: 90, tempoStability: 1, lastBeatConfidence: 1,
   dynamics: { level: 0.5, mark: mark as never, trend: 'steady', source: 'hand' }, rightPresent: true, leftPresent: true, rightConfidence: 1, leftConfidence: 1,
-  cue: { cue: null, progress: 0 }, stats: { beatsAccepted: 0, offPattern: 0, tooSoon: 0, ignored: 0, skippedBeats: 0, resyncs: 0 }, ...o,
+  cue: { cue: null, progress: 0 }, mixer: { section: null, candidate: null, progress: 0, volume: 0, fingers: null }, stats: { beatsAccepted: 0, offPattern: 0, tooSoon: 0, ignored: 0, skippedBeats: 0, resyncs: 0 }, ...o,
 })
 
 describe('PatternExercise', () => {

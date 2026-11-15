@@ -30,6 +30,21 @@ export function DemoConductorPanel({ session }: { session: ConductingSession }) 
           />
           <span className="w-14 text-right tabular-nums text-ivory">{demo.leftLevel === null ? 'auto' : demo.leftLevel.toFixed(2)}</span>
         </label>
+        <label className="flex items-center gap-3 text-ivory-dim">
+          <span className="w-28 shrink-0">Left hand shows</span>
+          <select
+            value={demo.leftPose === null ? 'natural' : String(demo.leftPose)} aria-label="Virtual conductor left hand pose"
+            onChange={(e) => session.setDemoLeftPose(e.target.value === 'natural' ? null : Number(e.target.value))}
+            className="min-w-0 flex-1 rounded-sm border border-ivory/15 bg-ink-900 px-2 py-1.5 text-ivory"
+          >
+            <option value="natural">Open hand (thumb out) — normal dynamics</option>
+            <option value="1">1 finger, thumb tucked — strings</option>
+            <option value="2">2 fingers — woodwinds</option>
+            <option value="3">3 fingers — brass</option>
+            <option value="4">4 fingers — percussion</option>
+            <option value="0">Fist — let go</option>
+          </select>
+        </label>
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-ivory-dim">
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={demo.leftLevel === null} onChange={(e) => session.setDemoLeftLevel(e.target.checked ? null : 0.5)} className="accent-gold" />

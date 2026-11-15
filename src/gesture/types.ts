@@ -1,3 +1,4 @@
+import type { SectionId } from '@/orchestra/sections'
 import type { DynamicMark } from './dynamicsMapper'
 import type { TimeSignature } from '@/config/gestureConfig'
 
@@ -84,7 +85,30 @@ export interface StateEvent {
   previous: ConductingState
 }
 
-export type ConductingEvent = BeatEvent | TempoEvent | DynamicsEvent | CueEvent | StrokeRejectedEvent | StateEvent
+/** Finger mixer: the left hand has taken hold of a section's volume, is moving it, or has let go. */
+export interface MixerEvent {
+  type: 'mixer'
+  timestampMs: number
+  phase: 'grab' | 'level' | 'release'
+  section: SectionId
+  /** Volume 0 (off) – 1 (full) the hand is asking for; meaningful for 'level'. */
+  volume: number
+}
+
+export interface MixerReading {
+  /** The section currently in the hand, or null. */
+  section: SectionId | null
+  /** A section whose finger pose is being held, on its way to being grabbed. */
+  candidate: SectionId | null
+  /** 0–1 progress of that hold. */
+  progress: number
+  /** The volume the hand is setting (0 off … 1 full) while a section is held. */
+  volume: number
+  /** Fingers currently shown (extended, thumb tucked), or null if no usable pose. */
+  fingers: number | null
+}
+
+export type ConductingEvent = BeatEvent | TempoEvent | DynamicsEvent | CueEvent | StrokeRejectedEvent | StateEvent | MixerEvent
 
 export interface DynamicsReading {
   /** Smoothed continuous level, 0 (softest) – 1 (loudest). */
@@ -131,5 +155,6 @@ export interface GestureSnapshot {
   rightConfidence: number
   leftConfidence: number
   cue: CueProgress
+  mixer: MixerReading
   stats: EngineStats
 }

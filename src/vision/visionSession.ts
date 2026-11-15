@@ -237,6 +237,10 @@ export class VisionSession {
   setDemoLeftLevel(level: number | 'wave') {
     this.demo?.setLeftLevel(level)
   }
+  /** Left hand finger pose of the synthetic conductor: 0–4 fingers with the thumb tucked, or undefined for a natural open hand. */
+  setDemoLeftPose(pose: number | undefined) {
+    this.demo?.setLeftPose(pose)
+  }
   setDemoTimeSignature(ts: TimeSignature) {
     this.demo?.setTimeSignature(ts)
   }

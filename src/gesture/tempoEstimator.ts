@@ -90,21 +90,26 @@ export class TempoEstimator {
       this.points = [{ idx: 0, t: b.tMs }]
       return null
     }
-    if (this.intervals.length && interval > 2.2 * median(this.intervals) && this.intervals.length >= 2) {
-      // far longer than the current beat: a pause in conducting, not a slower tempo
-      this.pendingOutliers = []
-      this.points = [{ idx: 0, t: b.tMs }]
-      return { state: this.state!, interval }
-    }
     this.points.push(newPoint)
     if (this.points.length > 10) this.points.shift()
 
     if (this.intervals.length >= 3) {
       const med = median(this.intervals)
       if (Math.abs(interval - med) / med > this.cfg.outlierFraction) {
+        // One odd interval is ignored (a slip, a hesitation, a missed beat). A few in a row that AGREE are a real tempo
+        // change — including a very large slowdown. (This used to discard anything over 2.2× the current beat as "a
+        // pause", for ever: after a big ritardando every beat looked like a pause and the tempo never came back down.)
         this.pendingOutliers.push(interval)
-        const agree = this.pendingOutliers.length >= 3 && this.pendingOutliers.every((x) => Math.abs(x - median(this.pendingOutliers)) / median(this.pendingOutliers) < 0.2)
+        if (this.pendingOutliers.length > 4) this.pendingOutliers.shift()
+        // A beat more than twice as long as the current one: two such beats in a row are enough (this is the case that
+        // used to be thrown away); everything else needs three that agree.
+        const big = interval > 2 * med
+        const need = big ? 2 : 3
+        const tail = this.pendingOutliers.slice(-need)
+        const m = median(tail)
+        const agree = tail.length >= need && tail.every((x) => Math.abs(x - m) / m < (big ? 0.25 : 0.2))
         if (!agree) return null
+        this.pendingOutliers = tail
         // a real tempo change: adopt the new intervals (and forget the beats of the old tempo)
         this.intervals = [...this.pendingOutliers]
         this.points = this.points.slice(-(this.pendingOutliers.length + 1))

@@ -3,6 +3,8 @@ import { StatusTag } from '@/components/ui/StatusTag'
 import { gestureSettings } from '@/config/settings'
 import { useStore } from '@/lib/store'
 import { drawHands, type OverlayContext } from '@/vision/overlay'
+import { predictFrame } from '@/vision/overlayMotion'
+import type { HandFrame } from '@/vision/types'
 import type { ConductingSession } from '@/conducting/conductingSession'
 import { CalibrationPanel } from './CalibrationPanel'
 import { TrackingStatus } from './TrackingStatus'
@@ -20,12 +22,28 @@ export function CameraPanel({ conducting }: { conducting: ConductingSession }) {
   // Hand the <video> to the session (it owns the stream) and subscribe the canvas to per-frame results.
   useEffect(() => {
     session.attachVideo(videoRef.current)
-    const unsub = session.onFrame((frame) => {
+    // Detections arrive 10–30 times a second; the overlay is redrawn every display frame at the pose the hands have most
+    // likely reached by now (see overlayMotion.ts), which makes fast hands look smooth and removes the visible lag.
+    let prev: HandFrame | null = null
+    let cur: HandFrame | null = null
+    let raf = 0
+    const paint = () => {
       const c = canvasRef.current
       const ctx = c?.getContext('2d')
-      if (c && ctx) drawHands(ctx as unknown as OverlayContext, frame, c.width, c.height)
+      if (c && ctx) drawHands(ctx as unknown as OverlayContext, cur ? predictFrame(prev, cur, performance.now()) : null, c.width, c.height)
+    }
+    const loop = () => {
+      if (cur) paint()
+      raf = requestAnimationFrame(loop)
+    }
+    const unsub = session.onFrame((frame) => {
+      prev = frame ? cur : null
+      cur = frame
+      if (!frame) paint()
     })
+    raf = requestAnimationFrame(loop)
     return () => {
+      cancelAnimationFrame(raf)
       unsub()
       session.attachVideo(null)
     }

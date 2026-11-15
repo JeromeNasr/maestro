@@ -5,7 +5,7 @@ import { MIN_RECORDED_SEC, SessionRecorder } from './sessionRecorder'
 const snapshot = (o: Partial<GestureSnapshot> = {}): GestureSnapshot => ({
   timestampMs: 0, state: 'conducting', timeSignature: '4/4', beatInBar: 1, expectedBeat: 2, bpm: 100, rawBpm: 100, tempoStability: 0.9, lastBeatConfidence: 0.9,
   dynamics: { level: 0.6, mark: 'mf', trend: 'steady', source: 'hand' }, rightPresent: true, leftPresent: true, rightConfidence: 0.9, leftConfidence: 0.8,
-  cue: { cue: null, progress: 0 }, stats: { beatsAccepted: 0, offPattern: 0, tooSoon: 0, ignored: 0, skippedBeats: 0, resyncs: 0 }, ...o,
+  cue: { cue: null, progress: 0 }, mixer: { section: null, candidate: null, progress: 0, volume: 0, fingers: null }, stats: { beatsAccepted: 0, offPattern: 0, tooSoon: 0, ignored: 0, skippedBeats: 0, resyncs: 0 }, ...o,
 })
 const beat = (o: Partial<BeatEvent> = {}): BeatEvent => ({
   type: 'beat', index: 1, beatInBar: 1, bar: 1, timestampMs: 0, detectedAtMs: 0, direction: 'down', intervalMs: 600, skipped: 0, resynced: false, confidence: 0.9, usedForTempo: true, ...o,

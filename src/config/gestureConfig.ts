@@ -115,6 +115,28 @@ export interface TrackingConfig {
   handednessMode: 'auto' | 'as-reported' | 'swapped'
 }
 
+/**
+ * The finger mixer (left hand): show 1–4 fingers with the thumb tucked, hold still, and that section is in your hand —
+ * its volume follows the height of the hand until you make a fist.
+ */
+export interface MixerGestureConfig {
+  enabled: boolean
+  /** Hold a finger pose still for this long to grab a section (ms). */
+  holdMs: number
+  /** The hand counts as "held still" below this speed (hand sizes per second). */
+  stillSpeed: number
+  /** A finger is extended when its tip is this many times farther from the wrist than its knuckle is. */
+  extendedRatio: number
+  /** The thumb is tucked when its tip is within this distance (in hand sizes) of the middle knuckle. */
+  thumbTuckedMax: number
+  /** A fist held this long lets go of the section (ms). */
+  releaseMs: number
+  /** Hand height (0–1) at or below which the grabbed section is switched off; at or above 1 − this it is at full volume. */
+  edgeLevel: number
+  /** Smoothing of the volume (ms). */
+  smoothingMs: number
+}
+
 export interface CalibrationConfig {
   /** Valid single-hand frames required per handedness step. */
   samplesPerHand: number
@@ -138,6 +160,7 @@ export interface GestureConfig {
   cues: CueConfig
   tracking: TrackingConfig
   calibration: CalibrationConfig
+  mixer: MixerGestureConfig
 }
 
 export const DEFAULT_GESTURE_CONFIG: GestureConfig = {
@@ -161,7 +184,7 @@ export const DEFAULT_GESTURE_CONFIG: GestureConfig = {
     patternResetGapMs: 1500,
     loneHandConducts: true,
   },
-  tempo: { minBpm: 40, maxBpm: 200, medianWindow: 5, smoothing: 0.5, maxBpmStepPerBeat: 14, outlierFraction: 0.35 },
+  tempo: { minBpm: 32, maxBpm: 200, medianWindow: 5, smoothing: 0.5, maxBpmStepPerBeat: 14, outlierFraction: 0.35 },
   dynamics: {
     boundaries: [0.17, 0.34, 0.5, 0.67, 0.84],
     hysteresis: 0.03,
@@ -195,5 +218,6 @@ export const DEFAULT_GESTURE_CONFIG: GestureConfig = {
     sensitivity: 1,
     handednessMode: 'auto',
   },
+  mixer: { enabled: true, holdMs: 700, stillSpeed: 1.2, extendedRatio: 1.5, thumbTuckedMax: 0.85, releaseMs: 400, edgeLevel: 0.06, smoothingMs: 220 },
   calibration: { samplesPerHand: 20, minLabelAgreement: 0.8, sideMargin: 0.08, rangeDurationMs: 6000, minRangeSpan: 0.12, stepTimeoutMs: 30000 },
 }

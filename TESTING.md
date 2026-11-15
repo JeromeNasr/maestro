@@ -35,3 +35,8 @@ Use Chromium or Chrome, `npm run build && npm run preview`, open http://localhos
 18. **Audio.** Check loudness at master max (no clipping), instrument distinctness, no clicks on start/pause/stop.
 
 Please record: browser/version, GPU/CPU delegate, FPS, handedness result, and any missed or false beats with your approximate BPM.
+
+## 4. Finger mixer and slowing down — what to check with a real camera
+* Left hand, thumb tucked across the palm, 1–4 fingers, hold still ~0.7 s: does the status line say "Hold… Brass 40%" and then "In your hand: Brass"? If fingers are miscounted, tune `mixer.extendedRatio` (higher = stricter); if the thumb pose is never recognised, raise `mixer.thumbTuckedMax`.
+* Does a relaxed open left hand during normal dynamics conducting ever grab a section by accident? (It should not.)
+* Conduct at ~110 BPM, then slow sharply to ~50: the music should follow within ~6–8 beats. Then slow gradually, and speed up again.
