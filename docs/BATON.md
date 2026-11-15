@@ -1,24 +1,25 @@
-# Baton tracking — feasibility decision
+# Baton tracking
 
-**Decision: MAESTRO does not track the baton tip. It tracks the hand that holds it. The baton is taught in the Academy.**
+**What exists:** an *experimental* Baton mode in the Studio that follows the baton **tip** by a **coloured marker** the user picks once, and lets the tip drive the beat. Without a marker nothing changes. The Academy also teaches the baton (grip, technique, sections).
 
-## What was considered
-| Approach | Verdict |
-|---|---|
-| Colour marker on the tip (HSV threshold + blob centroid) | Cheap (< 1 ms/frame on a 160×120 downscale) and the most plausible option. But it depends on lighting colour temperature, white balance, auto-exposure, skin tones, clothing and background; a neon marker can be matched by a poster or a shirt. It needs a per-user calibration of the hue/saturation range and a fallback when it is lost. |
-| Shape detection of the stick | A thin, low-contrast, motion-blurred line against arbitrary backgrounds, partly hidden by the fist. Not reliable with a webcam at 30 fps. |
-| Learned detector for the stick | Needs a labelled data set of batons in real rooms; none exists here, and shipping a second model would add download and CPU cost to the tracking loop. |
-| Extrapolating the tip from hand landmarks | A baton held in a fist is not visible in the landmarks; a guessed tip would be a fabricated measurement. |
+## How it works
+1. Put a vivid marker on the tip (tape, a sticker, a small ball): green, blue, pink or bright orange work; skin-like colours do not.
+2. Studio → Baton → switch on → *Pick marker colour* → click the marker in the camera preview. The colour is sampled from **this camera in this room** (median of a 7×7 patch, as hue/saturation/value), so lamps and white balance are part of the calibration, not a problem to guess at. The panel warns if the pick is dull, dark, skin-like, or if more than 2 % of the picture already has that colour.
+3. Every camera frame, a 320×240 copy is matched against the colour (hue within ±6°–22° by the *tolerance* slider, minimum saturation/brightness relative to the sample). The blobs of matching pixels are measured; one that is a plausible marker (between 0.008 % and 3 % of the frame, roughly round, not a line or an edge) and nearest to where the tip just was is the tip. No plausible blob = no answer (never a guess).
+4. The tip is smoothed (One-Euro, tuned for fast motion), turned into a velocity, and fed to the same stroke/beat logic as the palm — in place of it while the tracker is confident (≥ 45 %). A stroke in progress is dropped at the switch, because the coordinates change. If the marker is lost, conducting falls back to the hand without losing the tempo.
+5. *Show what it sees* paints the matched pixels over the preview, so a bad match (a green shirt, a plant) is visible at once.
 
-## Why it is not shipped
-The brief says not to ship unreliable baton detection. Reliability of any of the above can only be established with **real cameras, in real rooms, with real batons**, and this build environment has none: every tracking test here is synthetic (landmarks drawn by `DemoSource`, or the Chromium fake capture device). A colour tracker that passes synthetic tests proves nothing about a living-room webcam, so adding one would be advertising a feature that has not been verified.
+Benefits, measured on synthetic data: the tip travels further than the palm (a lever arm), so small movements register that the hand alone misses (25 % size gestures: 1 beat from the hand vs 18 from the tip, of ~37); and the tip is still seen when a fist round the stick confuses the hand model (hands removed, baton only: beats and tempo within 2.5 BPM).
 
-## What works today
-* A baton in the right hand is fine: the hand tracker follows the fist, and the beat logic (`strokeSegmenter` → `patternTracker`) uses the palm centre, so beats and tempo are detected as with a bare hand. **Not verified with a real baton**: a stick can change how MediaPipe sees the hand.
-* The Academy has three baton lessons (what/why/grip, preparation–rebound–character, communicating with the sections), each with an interactive demonstration and a quiz.
+## What has and has not been verified
+* **Verified (synthetic 320×240 frames, `src/vision/batonTracker.test.ts`):** position error < 1.5 px; four marker colours; lamp brightness ×0.55–×1.3 and warm/cool white balance; sensor noise; the skin-coloured hand patch; look-alike colours; two matching blobs (the one nearest the last position wins); huge areas and thin lines rejected; small, blurred, dim markers found; forgetting and re-finding; no marker = no answer.
+* **Verified (engine, synthetic tip):** accurate beats/tempo, hand-lost/baton-kept, baton-lost/hand-kept, off switches.
+* **NOT verified: any real camera, real marker, real room.** Real automatic exposure, motion blur at 30 fps, rolling shutter, a marker that turns away from the camera, glare on shiny tape, and other coloured objects in view will all matter. The tracker reports its confidence and match percentage so you can see how it is doing; please report what you find.
 
-## If you want to add it later
-1. Record 20–30 min of real conducting with a baton under 3–4 lighting conditions and 2–3 cameras; keep it locally (never upload it).
-2. Prototype a marker tracker in a worker next to the hand detector (shares the frame); output a `BatonFrame { tip, confidence }` and feed it to `StrokeSegmenter` in place of the palm when confidence is high.
-3. Gate it behind a calibration step (hold the marker in view; capture hue/saturation/value ranges; show the mask), a visible detection overlay and an automatic fall-back to the hand.
-4. Measure: detection rate, false-positive rate on marker-coloured objects, tip jitter versus the hand, and the beat-timing difference against hand tracking.
+## Known limits
+* A marker that is occluded by the fist or turned edge-on disappears; the hand takes over.
+* Colour tracking is blind to a bare stick. This is deliberate: a thin, low-contrast, motion-blurred line is not reliably visible to a webcam.
+* One marker, one camera; the tracker runs on the main thread (~1 ms per frame).
+
+## If it does not work well
+Pick a more vivid marker; add a larger one (a ball ≥ 2 cm); lower the tolerance if too much of the picture matches, raise it if the marker flickers; turn on *Show what it sees*; avoid shiny tape; keep the room lighting steady.

@@ -413,3 +413,23 @@ describe('GestureEngine — slowing down', () => {
     expect(last).toBeGreaterThan(held * 0.69)
   })
 })
+
+describe('GestureEngine — a stalled page is not a slowdown', () => {
+  it('a 1.6 s gap in the frames (decoding audio, a busy tab) does not slow the music', async () => {
+    const { DemoSource } = await import('@/vision/demoSource')
+    const { HandPipeline } = await import('@/vision/handPipeline')
+    const { GestureEngine } = await import('./gestureEngine')
+    const src = new DemoSource({ dropouts: false, bpm: 100, style: 'flowing', timeSignature: '4/4', visible: (s) => s === 'right' })
+    const pipe = new HandPipeline({ getConfig: () => DEFAULT_GESTURE_CONFIG, getHandedness: () => ({ swap: true, verified: true, origin: 'demo' }) })
+    const eng = new GestureEngine({ getConfig: () => DEFAULT_GESTURE_CONFIG })
+    eng.setTransport('playing')
+    const tempos: { t: number; bpm: number }[] = []
+    for (let i = 0; i < 30 * 30; i++) {
+      const t = (i * 1000) / 30
+      if (t > 12000 && t < 13600) continue // the stall: no frames at all
+      for (const e of eng.process(pipe.process(src.detect(t), t, 'demo'))) if (e.type === 'tempo') tempos.push({ t, bpm: e.bpm })
+    }
+    const around = tempos.filter((x) => x.t > 12000 && x.t < 16000)
+    expect(Math.min(...around.map((x) => x.bpm))).toBeGreaterThan(90) // 100 BPM held, no dip
+  })
+})

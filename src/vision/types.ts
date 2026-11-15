@@ -79,6 +79,22 @@ export interface TrackingSnapshot {
   reliability: number
 }
 
+/** HSV colour of the baton marker (hue 0–360°, saturation and value 0–1), sampled from the camera by the user. */
+export interface BatonColor { h: number; s: number; v: number }
+
+/** Where the baton tip is, from the marker tracker. Display space (mirrored, like the hands). */
+export interface BatonSample {
+  x: number
+  y: number
+  /** 0–1: how sure the tracker is (blob size and shape, steadiness). */
+  confidence: number
+  /** Marker blob area as a fraction of the frame. */
+  area: number
+  velocity: Vec2
+  speed: number
+  timestampMs: number
+}
+
 export interface HandFrame {
   timestampMs: number
   source: FrameSource
@@ -86,4 +102,6 @@ export interface HandFrame {
   right: TrackedHand | null
   detections: DetectionSummary[]
   tracking: TrackingSnapshot
+  /** The baton tip when marker tracking is on and the marker is seen (see BatonTracker). */
+  baton?: BatonSample | null
 }

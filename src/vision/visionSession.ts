@@ -3,13 +3,15 @@ import { gestureSettings } from '@/config/settings'
 import { createStore, type Store } from '@/lib/store'
 import { CameraController } from './camera'
 import { cameraErrorInfo, classifyCameraError, type CameraErrorInfo } from './cameraErrors'
+import { BatonSession } from './batonSession'
+import { HandKinematics } from './handKinematics'
 import { CalibrationSession, calibrationStore, IDLE_CALIBRATION, type CalibrationState } from './calibration'
 import { DemoSource, type DemoOptions } from './demoSource'
 import type { DetectorFactory, HandDetector } from './detector'
 import { clamp } from './geometry'
 import { HandPipeline } from './handPipeline'
 import { effectiveHandedness, type HandednessResolution } from './handedness'
-import type { DetectionResult, FrameSource, HandFrame, SideTracking } from './types'
+import type { BatonSample, DetectionResult, FrameSource, HandFrame, SideTracking } from './types'
 
 export type VisionStatus = 'idle' | 'requesting-permission' | 'loading-model' | 'running' | 'paused' | 'error'
 
@@ -106,6 +108,10 @@ export class VisionSession {
   private visibilityHandler: (() => void) | null = null
   private disposed = false
 
+  /** Baton-tip (coloured marker) tracking; see BatonSession. */
+  readonly baton: BatonSession
+  private demoBatonKin = new HandKinematics()
+
   constructor(private deps: VisionSessionDeps) {
     this.camera = deps.camera ?? new CameraController()
     this.scheduler = deps.scheduler ?? { request: (cb) => requestAnimationFrame(cb), cancel: (id) => cancelAnimationFrame(id) }
@@ -113,6 +119,7 @@ export class VisionSession {
     this.getConfig = deps.getConfig ?? (() => gestureSettings.get() ?? DEFAULT_GESTURE_CONFIG)
     this.doc = deps.doc ?? (typeof document !== 'undefined' ? document : null)
     this.pipeline = new HandPipeline({ getConfig: this.getConfig, getHandedness: () => this.handedness() })
+    this.baton = new BatonSession(this.getConfig)
     this.store = createStore<VisionSnapshot>({ ...IDLE_SNAPSHOT, handedness: this.handedness() })
     this.subscribeSettings()
   }
@@ -237,6 +244,10 @@ export class VisionSession {
   setDemoLeftLevel(level: number | 'wave') {
     this.demo?.setLeftLevel(level)
   }
+  /** The synthetic right hand holds a baton (reports a synthetic tip). */
+  setDemoBaton(on: boolean) {
+    this.demo?.setBaton(on)
+  }
   /** Left hand finger pose of the synthetic conductor: 0–4 fingers with the thumb tucked, or undefined for a natural open hand. */
   setDemoLeftPose(pose: number | undefined) {
     this.demo?.setLeftPose(pose)
@@ -339,6 +350,8 @@ export class VisionSession {
       const cap = this.captureMs
       const stamp = cap !== null && cap <= now && now - cap < 200 && cap > this.lastStamp ? cap : Math.max(now, this.lastStamp + 0.001)
       this.lastStamp = stamp
+      // The baton tip is read from the SAME camera frame the hands are detected in, at capture time.
+      const batonTip = this.baton.process(v, stamp)
       const fail = () => {
         this.teardown()
         this.fail({ kind: 'unknown', title: 'Hand tracking stopped', message: 'The hand-tracking model reported an error and was stopped. Press Enable camera to try again.', canRetry: true })
@@ -359,7 +372,7 @@ export class VisionSession {
             // Ignore results that arrive after a stop / restart / detector swap. The frame keeps its CAPTURE time, so
             // velocities are not distorted by inference latency.
             if (gen !== this.gen || this.detector !== d || this.store.get().status !== 'running') return
-            this.finishFrame(r, stamp, this.now() - now, 'camera')
+            this.finishFrame(r, stamp, this.now() - now, 'camera', batonTip)
           },
           () => {
             this.inflight = false
@@ -369,15 +382,18 @@ export class VisionSession {
         )
         return
       }
-      this.finishFrame(res, stamp, this.now() - now, 'camera')
+      this.finishFrame(res, stamp, this.now() - now, 'camera', batonTip)
       return
     }
-    this.finishFrame(this.demo!.detect(now - this.demoStart), now, 0, 'demo')
+    const demoTip = this.demo!.batonTip(now - this.demoStart)
+    if (this.demo!.hasBaton) this.baton.synthetic(demoTip !== null, now)
+    this.finishFrame(this.demo!.detect(now - this.demoStart), now, 0, 'demo', demoTip ? this.demoBatonSample(demoTip, now) : null)
   }
 
   /** Everything after detection: pipeline, calibration, listeners, measured rates, throttled UI update. */
-  private finishFrame(result: DetectionResult, now: number, inference: number, source: FrameSource) {
+  private finishFrame(result: DetectionResult, now: number, inference: number, source: FrameSource, baton: BatonSample | null = null) {
     const frame = this.pipeline.process(result, now, source)
+    if (baton) frame.baton = baton
 
     // Calibration consumes the same frames.
     if (this.calibration?.active) {
@@ -477,5 +493,12 @@ export class VisionSession {
     this.calibration?.cancel()
     this.calibration = null
     this.pipeline.reset()
+    this.baton.reset()
+    this.demoBatonKin.reset()
+  }
+
+  private demoBatonSample(tip: { x: number; y: number }, now: number): BatonSample {
+    const k = this.demoBatonKin.update(tip, now)
+    return { x: tip.x, y: tip.y, confidence: 0.95, area: 0.0006, velocity: k.velocity, speed: k.speed, timestampMs: now }
   }
 }

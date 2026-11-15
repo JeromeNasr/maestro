@@ -1,3 +1,4 @@
+import { BatonPanel } from '@/components/studio/BatonPanel'
 import { CameraPanel } from '@/components/studio/CameraPanel'
 import { ConductingPanel } from '@/components/studio/ConductingPanel'
 import { DemoConductorPanel } from '@/components/studio/DemoConductorPanel'
@@ -38,6 +39,7 @@ export function Studio() {
           <TransportPanel session={session} />
           <MixerPanel session={session} />
           <DemoConductorPanel session={session} />
+          <BatonPanel session={session} />
           <ConductingPanel session={session} />
           <TuningPanel />
         </div>

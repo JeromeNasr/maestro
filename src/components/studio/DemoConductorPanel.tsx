@@ -51,6 +51,10 @@ export function DemoConductorPanel({ session }: { session: ConductingSession }) 
             Left hand waves by itself
           </label>
           <label className="flex items-center gap-2">
+            <input type="checkbox" checked={demo.baton} onChange={(e) => session.setDemoBaton(e.target.checked)} className="accent-gold" aria-label="Virtual conductor holds a baton" />
+            Right hand holds a baton
+          </label>
+          <label className="flex items-center gap-2">
             <input type="checkbox" checked={demo.dropouts} onChange={(e) => session.setDemoDropouts(e.target.checked)} className="accent-gold" />
             Simulate tracking dropouts
           </label>

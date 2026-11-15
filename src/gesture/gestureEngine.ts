@@ -47,8 +47,13 @@ export class GestureEngine {
   private rightLastSeenMs: number | null = null
   /** A right hand has been seen since the last reset: after that, a lone left hand is the dynamics hand again, not a beat hand. */
   private rightEverSeen = false
+  /** The beat is currently read from the baton tip rather than the palm. */
+  private batonActive = false
   /** Tempo implied by a beat that is overdue (see `overdueTempo`); null while beats arrive on time. */
   private overdueBpm: number | null = null
+  /** Frames stopped arriving (the page was busy, the tab was throttled) since the last beat: a gap is then not a slowdown. */
+  private stalledSinceBeat = false
+  private prevFrameMs: number | null = null
   private lastBeat: { tMs: number; detectedMs: number; beatInBar: number; confidence: number } | null = null
   private beatCount = 0
   /** Consecutive accepted, in-order beats; an off-pattern stroke or a long gap breaks it. */
@@ -98,7 +103,10 @@ export class GestureEngine {
     this.handSize = null
     this.rightLastSeenMs = null
     this.rightEverSeen = false
+    this.batonActive = false
     this.overdueBpm = null
+    this.stalledSinceBeat = false
+    this.prevFrameMs = null
     this.lastBeat = null
     this.beatCount = 0
     this.chain = 0
@@ -131,9 +139,22 @@ export class GestureEngine {
 
     // The beat hand: the right hand — or, when it is the only hand in view, that hand (see BeatConfig.loneHandConducts).
     if (frame.right?.status === 'tracking') this.rightEverSeen = true
-    const lone = this.loneHand(frame, cfg)
-    this.right(lone ?? frame.right, t, cfg, events)
-    if (events.some((e) => e.type === 'beat')) this.overdueBpm = null
+    // The baton tip, when it is being tracked and the user asked for it, IS the beat hand: it travels further than the palm
+    // (a lever arm), so its strokes are bigger and clearer, and it is still there when a fist round the baton confuses the
+    // hand model. Switching between tip and palm changes the coordinates, so a stroke in progress is dropped at the switch.
+    const tip = cfg.baton.enabled && cfg.baton.useForBeats && frame.baton && frame.baton.confidence >= 0.45 ? frame.baton : null
+    const usingTip = tip !== null
+    if (usingTip !== this.batonActive) this.segmenter.abort()
+    this.batonActive = usingTip
+    if (usingTip) this.rightEverSeen = true
+    const lone = usingTip ? null : this.loneHand(frame, cfg)
+    this.right(usingTip ? this.batonAsHand(frame, tip!) : (lone ?? frame.right), t, cfg, events)
+    if (this.prevFrameMs !== null && t - this.prevFrameMs > 300) this.stalledSinceBeat = true
+    this.prevFrameMs = t
+    if (events.some((e) => e.type === 'beat')) {
+      this.overdueBpm = null
+      this.stalledSinceBeat = false
+    }
     else this.overdueTempo(frame, lone, t, events)
 
     // The finger mixer takes the left hand: while a section is in it (or a pose is being held to grab one), ordinary dynamics
@@ -196,7 +217,7 @@ export class GestureEngine {
   private overdueTempo(frame: HandFrame, lone: TrackedHand | null, t: number, events: ConductingEvent[]) {
     const tempo = this.tempo.state
     const interval = this.tempo.intervalMs
-    if (!tempo || !interval || !this.lastBeat || this.chain < 4) return
+    if (!tempo || !interval || !this.lastBeat || this.chain < 4 || this.stalledSinceBeat) return
     if (!(lone ?? frame.right) || (lone ?? frame.right)?.status !== 'tracking') return
     const elapsed = t - this.lastBeat.tMs
     if (elapsed <= 2.5 * interval) return // one missed beat (2×) is normal and handled by the pattern tracker
@@ -204,6 +225,18 @@ export class GestureEngine {
     if (implied >= tempo.bpm || (this.overdueBpm !== null && Math.abs(implied - this.overdueBpm) / this.overdueBpm < 0.03)) return
     this.overdueBpm = implied
     events.push({ type: 'tempo', timestampMs: t, bpm: implied, rawBpm: implied, stability: tempo.stability ?? 0 })
+  }
+
+  /** The tip as a "hand" for the stroke logic: position and velocity of the tip, scaled by the real hand's size. */
+  private batonAsHand(frame: HandFrame, tip: NonNullable<HandFrame['baton']>): TrackedHand {
+    const base = frame.right ?? frame.left
+    const handSize = base?.handSize ?? this.handSize ?? 0.1
+    return {
+      side: 'right', status: 'tracking', landmarks: base?.landmarks ?? [], wrist: base?.wrist ?? { x: tip.x, y: tip.y, z: 0 }, palm: { x: tip.x, y: tip.y },
+      fingertips: [], handSize, confidence: tip.confidence,
+      kinematics: { velocity: tip.velocity, acceleration: { x: 0, y: 0 }, speed: tip.speed, direction: tip.speed >= 0.05 ? Math.atan2(tip.velocity.y, tip.velocity.x) : null },
+      labelSource: 'tracked', handednessVerified: true,
+    }
   }
 
   /**
@@ -381,7 +414,7 @@ export class GestureEngine {
   // ───────────── conducting state ─────────────
 
   private updateState(t: number, frame: HandFrame, events: ConductingEvent[]) {
-    const rightOk = frame.right?.status === 'tracking' || this.loneHand(frame, this.deps.getConfig()) !== null
+    const rightOk = frame.right?.status === 'tracking' || this.batonActive || this.loneHand(frame, this.deps.getConfig()) !== null
     const interval = this.tempo.intervalMs ?? 800
     const recent = this.lastBeat !== null && t - this.lastBeat.detectedMs <= Math.max(1500, 2.2 * interval)
     let next: ConductingState

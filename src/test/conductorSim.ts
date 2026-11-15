@@ -2,6 +2,7 @@ import { DEFAULT_GESTURE_CONFIG, type GestureConfig } from '@/config/gestureConf
 import { GestureEngine } from '@/gesture/gestureEngine'
 import type { CalibrationProfile } from '@/vision/calibration'
 import { DemoSource, type DemoOptions } from '@/vision/demoSource'
+import { HandKinematics } from '@/vision/handKinematics'
 import { HandPipeline } from '@/vision/handPipeline'
 import type { HandednessResolution } from '@/vision/handedness'
 import type { ConductingEvent, GestureSnapshot } from '@/gesture/types'
@@ -40,6 +41,7 @@ export function simulate(o: SimOptions): SimResult {
   const src = new DemoSource({ dropouts: false, ...o.demo })
   const pipeline = new HandPipeline({ getConfig: () => config, getHandedness: () => o.handedness ?? { swap: true, verified: true, origin: 'demo' } })
   const frames: import('@/vision/types').HandFrame[] = []
+  const batonKin = new HandKinematics()
   const engine = new GestureEngine({ getConfig: () => config, getCalibration: () => o.calibration ?? null })
   engine.setTimeSignature(o.demo?.timeSignature ?? config.timeSignature)
   engine.setTransport(o.transport ?? 'playing')
@@ -52,6 +54,11 @@ export function simulate(o: SimOptions): SimResult {
     const t = t0 + (i * 1000) / fps
     o.onFrame?.(t, src, engine)
     const frame = pipeline.process(src.detect(t - t0), t, 'demo')
+    const tip = src.batonTip(t - t0)
+    if (tip) {
+      const k = batonKin.update(tip, t)
+      frame.baton = { x: tip.x, y: tip.y, confidence: 0.95, area: 0.0006, velocity: k.velocity, speed: k.speed, timestampMs: t }
+    }
     frames.push(frame)
     events.push(...engine.process(frame))
     snapshots.push(engine.snapshot)

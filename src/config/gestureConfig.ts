@@ -137,6 +137,17 @@ export interface MixerGestureConfig {
   smoothingMs: number
 }
 
+/** Baton-tip tracking by a coloured marker (experimental; see vision/batonTracker.ts). Off until the user turns it on. */
+export interface BatonConfig {
+  enabled: boolean
+  /** The marker colour sampled from the camera by the user (null until picked). */
+  color: { h: number; s: number; v: number } | null
+  /** 0 = strict colour match … 1 = forgiving. */
+  tolerance: number
+  /** Use the tip (instead of the palm) for beat detection while it is tracked. */
+  useForBeats: boolean
+}
+
 export interface CalibrationConfig {
   /** Valid single-hand frames required per handedness step. */
   samplesPerHand: number
@@ -161,6 +172,7 @@ export interface GestureConfig {
   tracking: TrackingConfig
   calibration: CalibrationConfig
   mixer: MixerGestureConfig
+  baton: BatonConfig
 }
 
 export const DEFAULT_GESTURE_CONFIG: GestureConfig = {
@@ -218,6 +230,7 @@ export const DEFAULT_GESTURE_CONFIG: GestureConfig = {
     sensitivity: 1,
     handednessMode: 'auto',
   },
+  baton: { enabled: false, color: null, tolerance: 0.5, useForBeats: true },
   mixer: { enabled: true, holdMs: 700, stillSpeed: 1.2, extendedRatio: 1.5, thumbTuckedMax: 0.85, releaseMs: 400, edgeLevel: 0.06, smoothingMs: 220 },
   calibration: { samplesPerHand: 20, minLabelAgreement: 0.8, sideMargin: 0.08, rangeDurationMs: 6000, minRangeSpan: 0.12, stepTimeoutMs: 30000 },
 }

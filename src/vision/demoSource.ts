@@ -76,6 +76,10 @@ export interface DemoOptions {
   /** Detector score reported for the hands (0–1). */
   score: number
   /** 'mediapipe-raw' (default): labels inverted like MediaPipe does for an un-mirrored frame. 'as-user': labels equal the user's side. */
+  /** The right hand holds a baton: the demo then also reports a synthetic tip position. */
+  baton?: boolean
+  /** When the baton is in view (default: whenever the right hand is). Lets a test lose the hand but keep the baton. */
+  batonVisible?: (tSec: number) => boolean
   /** Left-hand finger pose over time: fingers held up (0 = fist … 4) with the thumb tucked; negative = natural open hand. */
   leftPose?: Num
   /** Wrist → middle-base distance in image heights (default 0.16; a real hand at arm's length is nearer 0.09–0.12). */
@@ -123,6 +127,20 @@ export class DemoSource {
   setBpm(bpm: Num) { this.opts.bpm = bpm }
   setLeftLevel(l: Num | 'wave') { this.opts.leftLevel = l }
   setLeftPose(p: number | undefined) { this.opts.leftPose = p }
+  setBaton(on: boolean) { this.opts.baton = on }
+  get hasBaton(): boolean { return !!this.opts.baton }
+
+  /**
+   * Synthetic baton tip (display space), when the demo conductor "holds a baton": the tip travels further than the palm (a
+   * lever arm of ~1.8×) and sits above it. Null while the right hand is out of view or no baton is held.
+   */
+  batonTip(tMs: number): { x: number; y: number } | null {
+    const visible = this.opts.batonVisible ? this.opts.batonVisible(tMs / 1000) : this.isVisible('right', tMs / 1000)
+    if (!this.opts.baton || !visible) return null
+    const p = this.opts.paths?.right ? this.palmAt('right', tMs / 1000) : this.rightPalmAtPhase(this.phase)
+    const n = this.opts.noise
+    return { x: 0.68 + 1.8 * (p.x - 0.68) + (n ? (this.rnd() - 0.5) * n * 2 : 0), y: 0.4 + 1.8 * (p.y - 0.5) - 0.06 + (n ? (this.rnd() - 0.5) * n * 2 : 0) }
+  }
   setTimeSignature(ts: TimeSignature) { this.opts.timeSignature = ts; this.phase = 0 }
 
   /** Whether a hand is visible at time t. By default the right hand briefly drops out (0.15 s and 0.9 s per 20 s loop). */

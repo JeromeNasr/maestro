@@ -278,3 +278,26 @@ test('finger mixer: 3 fingers + hand to the bottom turns the brass off (real aud
   await setRange(page, /left hand height/, 0.9)
   await expect(page.getByRole('slider', { name: 'Brass volume' })).toHaveValue('0') // let go: the hand no longer moves it
 })
+
+test('baton mode: with the demonstration conductor holding a baton, the tip is tracked and drives the tempo', async ({ page }) => {
+  await page.goto('/studio')
+  await page.getByRole('button', { name: 'Virtual conductor' }).click()
+  await page.getByRole('checkbox', { name: /tracking dropouts/ }).uncheck()
+  await setRange(page, /Virtual conductor tempo/, 80)
+  await page.getByRole('checkbox', { name: 'Virtual conductor holds a baton' }).check()
+  await page.getByRole('checkbox', { name: 'Follow my baton tip' }).check()
+  await expect(page.getByTestId('baton-status')).toContainText(/Tip found/, { timeout: 10_000 })
+  await transport(page, 'Start').click()
+  await expect(transport(page, 'Pause')).toBeEnabled({ timeout: 60_000 })
+  await expect.poll(() => numberIn(page, 'readout-your-tempo'), { timeout: 40_000 }).toBeGreaterThan(74)
+  expect(await numberIn(page, 'readout-your-tempo')).toBeLessThan(86)
+  await expect(page.getByTestId('conducting-state')).toHaveText('Conducting')
+})
+
+test('baton panel: picking needs the live camera, and says how it works', async ({ page }) => {
+  await page.goto('/studio')
+  await page.getByRole('checkbox', { name: 'Follow my baton tip' }).check()
+  await expect(page.getByTestId('baton-panel')).toContainText(/marker/i)
+  await expect(page.getByRole('button', { name: /Pick marker colour/ })).toBeDisabled()
+  await expect(page.getByTestId('baton-panel')).toContainText(/Enable the camera to pick/i)
+})

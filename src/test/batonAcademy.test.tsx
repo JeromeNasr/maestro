@@ -14,9 +14,11 @@ describe('baton lessons are part of the course', () => {
       expect(l.quiz.length).toBeGreaterThanOrEqual(3)
     }
   })
-  it('the course says plainly that MAESTRO does not track the baton tip', () => {
+  it('the course says plainly how the baton tip is followed: a marker you pick, experimental', () => {
     const text = LESSONS.find((l) => l.id === 'baton')!.body.join(' ')
-    expect(text).toMatch(/does not detect the baton itself/)
+    expect(text).toMatch(/experimental Baton mode/)
+    expect(text).toMatch(/marker/)
+    expect(text).not.toMatch(/does not detect the baton/)
   })
   it('covers what the brief asks for: what and why, how to hold it, patterns, tempo, dynamics, start/stop, sections', () => {
     const all = LESSONS.map((l) => `${l.id} ${l.title} ${l.body.join(' ')}`.toLowerCase()).join(' ')

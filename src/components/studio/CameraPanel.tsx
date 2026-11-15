@@ -4,6 +4,7 @@ import { gestureSettings } from '@/config/settings'
 import { useStore } from '@/lib/store'
 import { drawHands, type OverlayContext } from '@/vision/overlay'
 import { predictFrame } from '@/vision/overlayMotion'
+import { drawBaton } from '@/vision/batonOverlay'
 import type { HandFrame } from '@/vision/types'
 import type { ConductingSession } from '@/conducting/conductingSession'
 import { CalibrationPanel } from './CalibrationPanel'
@@ -18,6 +19,11 @@ export function CameraPanel({ conducting }: { conducting: ConductingSession }) {
   const cfg = useStore(gestureSettings)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const batonStatus = useStore(session.baton.store)
+  const showMaskRef = useRef(false)
+  useEffect(() => {
+    showMaskRef.current = batonStatus.showMask
+  }, [batonStatus.showMask])
 
   // Hand the <video> to the session (it owns the stream) and subscribe the canvas to per-frame results.
   useEffect(() => {
@@ -30,7 +36,10 @@ export function CameraPanel({ conducting }: { conducting: ConductingSession }) {
     const paint = () => {
       const c = canvasRef.current
       const ctx = c?.getContext('2d')
-      if (c && ctx) drawHands(ctx as unknown as OverlayContext, cur ? predictFrame(prev, cur, performance.now()) : null, c.width, c.height)
+      if (c && ctx) {
+        drawHands(ctx as unknown as OverlayContext, cur ? predictFrame(prev, cur, performance.now()) : null, c.width, c.height)
+        drawBaton(ctx, c.width, c.height, cur, session.baton, showMaskRef.current)
+      }
     }
     const loop = () => {
       if (cur) paint()
@@ -75,7 +84,15 @@ export function CameraPanel({ conducting }: { conducting: ConductingSession }) {
       <div className="relative bg-ink-950" style={{ aspectRatio: `${size.width} / ${size.height}` }}>
         {/* Mirrored preview. The overlay canvas is NOT mirrored: landmarks are already in display (mirrored) space. */}
         <video ref={videoRef} muted playsInline aria-label="Camera preview" className={`absolute inset-0 h-full w-full -scale-x-100 object-fill ${isCamera && (status === 'running' || status === 'paused') ? '' : 'invisible'}`} />
-        <canvas ref={canvasRef} width={size.width} height={size.height} aria-hidden="true" className="absolute inset-0 h-full w-full" />
+        <canvas
+          ref={canvasRef} width={size.width} height={size.height} aria-hidden="true"
+          className={`absolute inset-0 h-full w-full ${batonStatus.picking ? 'cursor-crosshair ring-2 ring-inset ring-gold' : ''}`}
+          onClick={(e) => {
+            if (!batonStatus.picking || !videoRef.current) return
+            const r = e.currentTarget.getBoundingClientRect()
+            session.baton.pickAt(videoRef.current, (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height)
+          }}
+        />
 
         {isDemo && (
           <div className="absolute inset-0 -z-0 bg-[linear-gradient(rgba(196,163,90,.06)_1px,transparent_1px),linear-gradient(90deg,rgba(196,163,90,.06)_1px,transparent_1px)] bg-[size:10%_10%]" aria-hidden="true" />

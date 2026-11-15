@@ -44,6 +44,8 @@ export interface DemoSettings {
   dropouts: boolean
   /** Left hand pose: null = natural open hand; 0 = fist; 1–4 = that many fingers with the thumb tucked (drives the finger mixer). */
   leftPose: number | null
+  /** The synthetic right hand holds a baton. */
+  baton: boolean
 }
 
 export interface StudioSnapshot {
@@ -68,7 +70,7 @@ export interface StudioSnapshot {
   demo: DemoSettings
 }
 
-const DEFAULT_DEMO: DemoSettings = { bpm: 84, leftLevel: null, dropouts: true, leftPose: null }
+const DEFAULT_DEMO: DemoSettings = { bpm: 84, leftLevel: null, dropouts: true, leftPose: null, baton: false }
 
 const defaultFetchScore = async (c: Composition): Promise<Score> => {
   if (!c.midiUrl) throw new Error(`“${c.title}” has no MIDI arrangement yet.`)
@@ -313,7 +315,7 @@ export class ConductingSession {
 
   startDemo() {
     const d = this.store.get().demo
-    this.vision.startDemo({ bpm: d.bpm, leftLevel: d.leftLevel ?? 'wave', dropouts: d.dropouts, timeSignature: this.store.get().timeSignature, ...(d.leftPose !== null ? { leftPose: d.leftPose } : {}) })
+    this.vision.startDemo({ bpm: d.bpm, leftLevel: d.leftLevel ?? 'wave', dropouts: d.dropouts, timeSignature: this.store.get().timeSignature, ...(d.leftPose !== null ? { leftPose: d.leftPose } : {}), baton: d.baton })
   }
   setDemoBpm(bpm: number) {
     const b = Math.max(40, Math.min(200, bpm))
@@ -327,6 +329,10 @@ export class ConductingSession {
   setDemoLeftPose(pose: number | null) {
     this.patch({ demo: { ...this.store.get().demo, leftPose: pose } })
     this.vision.setDemoLeftPose(pose ?? undefined)
+  }
+  setDemoBaton(on: boolean) {
+    this.patch({ demo: { ...this.store.get().demo, baton: on } })
+    this.vision.setDemoBaton(on)
   }
   setDemoDropouts(on: boolean) {
     this.patch({ demo: { ...this.store.get().demo, dropouts: on } })

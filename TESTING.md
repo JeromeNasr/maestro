@@ -51,3 +51,8 @@ Automated (all synthetic or fake-device — none of this is a physical-webcam re
 
 Still needs a physical webcam (see section 2): right-hand identification with a real MediaPipe model (is the default `swap = true` right on your browser?), crossing hands, lighting changes, small-gesture adoption, a baton in the hand, and the real feel of latency.
 Still needs ears: the instrument balance, the quality of the sustain loops, timpani tuning (derived by analysis, not by listening), the horn's register gap.
+
+## 6. Baton mode — what to check with a real camera
+* Put a vivid marker (not skin-coloured) on the tip, enable Baton, pick it in the preview: is the "tip found" confidence steady? Does "Show what it sees" paint ONLY the marker (not a shirt, a plant, your hand)?
+* Conduct 4/4: do the beats match those from your hand? Does it help or hurt when the marker turns away or is hidden by your fist (it should fall back to the hand without a tempo jump)?
+* Try a lamp on/off and a window: does the match percentage stay small and the tip stay found? If not, adjust tolerance or choose a different marker.
