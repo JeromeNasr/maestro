@@ -1,6 +1,7 @@
 import { DEFAULT_GESTURE_CONFIG, type TimeSignature } from '@/config/gestureConfig'
 import { rng } from '@/test/fixtures'
 import { simulate, type SimResult } from '@/test/conductorSim'
+import { DemoSource } from '@/vision/demoSource'
 
 const perBar = (ts: TimeSignature) => Number(ts[0])
 const outOfOrder = (r: SimResult, ts: TimeSignature) => {
@@ -152,10 +153,30 @@ describe('GestureEngine — left-hand dynamics', () => {
     expect(noLeft.engine.snapshot.dynamics.level).toBeCloseTo(DEFAULT_GESTURE_CONFIG.dynamics.defaultLevel, 2)
   })
 
-  it('left-hand movement alone never produces beats', () => {
-    const r = simulate({ demo: { visible: (s) => s === 'left', leftLevel: (t) => 0.5 + 0.45 * Math.sin(t * 4) }, seconds: 20 })
+  it('with lone-hand conducting switched off, left-hand movement alone never produces beats', () => {
+    const config = { beat: { ...DEFAULT_GESTURE_CONFIG.beat, loneHandConducts: false } }
+    const r = simulate({ demo: { visible: (s) => s === 'left', leftLevel: (t) => 0.5 + 0.45 * Math.sin(t * 4) }, seconds: 20, config })
     expect(r.beats).toHaveLength(0)
     expect(r.engine.snapshot.state).toBe('no-hand')
+  })
+
+  it('a hand that is the only one in view conducts even if it was assigned to the LEFT slot (mislabelled / awkward framing)', () => {
+    // right hand's conducting path, but fed in as the LEFT hand only
+    const base = simulate({ demo: { bpm: 90, timeSignature: '4/4', style: 'flowing', noise: 0.004 }, seconds: 5 })
+    const path = (t: number) => base.engine && (new DemoSource({ bpm: 90, timeSignature: '4/4', style: 'flowing', dropouts: false }).palmAt('right', t))
+    const r = simulate({ demo: { paths: { left: (t) => path(t) as { x: number; y: number } }, visible: (s) => s === 'left', noise: 0.004 }, seconds: 24 })
+    expect(r.beats.length).toBeGreaterThan(24 * 1.5 * 0.5)
+    expect(Math.abs((r.tempos.at(-1)?.bpm ?? 0) - 90)).toBeLessThan(5) // the path's own tempo is 90 BPM: the lone hand is followed accurately
+  })
+
+  it('once a right hand has been seen, a lone left hand is back to dynamics only (no accidental beats)', () => {
+    const r = simulate({
+      demo: { bpm: 90, visible: (s, t) => (s === 'right' ? t < 6 : true), leftLevel: (t) => 0.5 + 0.45 * Math.sin(t * 4) },
+      seconds: 20,
+    })
+    const late = r.beats.filter((b) => b.timestampMs > 9000)
+    expect(late).toHaveLength(0)
+    expect(r.engine.snapshot.state === 'tracking-lost' || r.engine.snapshot.state === 'no-hand').toBe(true)
   })
 
   it('keeps the last dynamic when the left hand leaves the frame', () => {

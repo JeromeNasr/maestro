@@ -43,6 +43,8 @@ export class GestureEngine {
   private aspect = 4 / 3
   private handSize: number | null = null
   private rightLastSeenMs: number | null = null
+  /** A right hand has been seen since the last reset: after that, a lone left hand is the dynamics hand again, not a beat hand. */
+  private rightEverSeen = false
   private lastBeat: { tMs: number; detectedMs: number; beatInBar: number; confidence: number } | null = null
   private beatCount = 0
   /** Consecutive accepted, in-order beats; an off-pattern stroke or a long gap breaks it. */
@@ -90,6 +92,7 @@ export class GestureEngine {
     this.cues.reset()
     this.handSize = null
     this.rightLastSeenMs = null
+    this.rightEverSeen = false
     this.lastBeat = null
     this.beatCount = 0
     this.chain = 0
@@ -120,7 +123,10 @@ export class GestureEngine {
     this.lastFrame = frame
     const ranges = rangesFromProfile(this.deps.getCalibration?.())
 
-    this.right(frame.right, t, cfg, events)
+    // The beat hand: the right hand — or, when it is the only hand in view, that hand (see BeatConfig.loneHandConducts).
+    if (frame.right?.status === 'tracking') this.rightEverSeen = true
+    const lone = this.loneHand(frame, cfg)
+    this.right(lone ?? frame.right, t, cfg, events)
 
     const before = this.dynamics.reading
     const dyn = this.dynamics.update(frame.left, t, ranges.left)
@@ -165,6 +171,16 @@ export class GestureEngine {
     }
     this.snapshotCache = snap
     return snap
+  }
+
+  /**
+   * The hand that conducts when no right hand has ever appeared: the only visible hand (see BeatConfig.loneHandConducts).
+   * Once a right hand HAS been seen the usual roles apply, so a left hand that stays up while the right is briefly out of
+   * view keeps shaping dynamics and does not start beating by accident.
+   */
+  private loneHand(frame: HandFrame, cfg: GestureConfig): TrackedHand | null {
+    if (!cfg.beat.loneHandConducts || this.rightEverSeen || frame.right?.status === 'tracking') return null
+    return frame.left?.status === 'tracking' ? frame.left : null
   }
 
   // ───────────── right hand: strokes → beats → tempo ─────────────
@@ -332,7 +348,7 @@ export class GestureEngine {
   // ───────────── conducting state ─────────────
 
   private updateState(t: number, frame: HandFrame, events: ConductingEvent[]) {
-    const rightOk = frame.right?.status === 'tracking'
+    const rightOk = frame.right?.status === 'tracking' || this.loneHand(frame, this.deps.getConfig()) !== null
     const interval = this.tempo.intervalMs ?? 800
     const recent = this.lastBeat !== null && t - this.lastBeat.detectedMs <= Math.max(1500, 2.2 * interval)
     let next: ConductingState

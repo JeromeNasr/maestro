@@ -164,11 +164,17 @@ export class HandIdentityTracker {
       const pred = { x: t.palm.x + t.vel.x * Math.min(dt, 0.25), y: t.palm.y + t.vel.y * Math.min(dt, 0.25) }
       const d = this.dist(pred, c.palm)
       const scale = Math.max(0.05, t.size)
-      // How far can a palm plausibly travel? A hand-size or two plus ~2.5 image-widths/s of conducting speed.
-      const gate = 1.5 * scale + 0.06 + 2.5 * Math.min(1, dt)
+      // How far can a palm travel between two detections? A quick conducting flick is 3–4 image-widths per second and the
+      // detector may only run at 10 fps, so the gate is generous: the cost below (and the label) separate two hands, the gate
+      // only has to avoid declaring one fast hand to be a stranger — which would hand the beat to the other side.
+      const gate = 0.3 + 6 * Math.min(0.6, dt) + 2 * scale
       if (d > gate) return Infinity
       const e = labelEvidence(c, swap)
       const disagree = Math.sign(e) !== (s === 'right' ? 1 : -1) ? Math.abs(e) : 0
+      // A different hand that appears on the other side of the picture, with a label that says so, is a NEW hand even if it
+      // is inside the (generous) gate; a flicking hand rarely does all three at once: cross the middle, jump far, flip label.
+      const crossed = s === 'right' ? t.palm.x > 0.55 && c.palm.x < 0.4 : t.palm.x < 0.45 && c.palm.x > 0.6
+      if (disagree >= 0.6 && crossed && d > 0.35) return Infinity
       return d / scale + 0.8 * disagree
     }
     let best: { total: number; map: Partial<Record<Side, number>> } = { total: Infinity, map: {} }

@@ -106,10 +106,11 @@ export class HandPipeline {
     if (!last || nowMs - last.t > 400) return accept()
     const hs = Math.max(0.03, last.size)
     const dt = Math.max(0.001, (nowMs - last.t) / 1000)
-    const jump = Math.hypot(palm.x - last.palm.x, palm.y - last.palm.y) / hs
-    if (jump <= 1.2 + 14 * dt) return accept()
+    // Allowed: whichever is larger of "a hand-size-based reach" and a very fast flick (≈6 image-widths per second, in image units).
+    const dist = Math.hypot(palm.x - last.palm.x, palm.y - last.palm.y)
+    if (dist <= Math.max(0.12 + 6 * dt, (1.5 + 14 * dt) * hs)) return accept()
     const p = this.pending[side]
-    if (p && Math.hypot(palm.x - p.x, palm.y - p.y) / hs < 1) return accept() // confirmed by a second frame
+    if (p && Math.hypot(palm.x - p.x, palm.y - p.y) < Math.max(0.12, hs)) return accept() // confirmed by a second frame
     this.pending[side] = palm
     return true
   }

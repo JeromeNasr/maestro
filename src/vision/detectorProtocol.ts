@@ -28,3 +28,14 @@ export function isAllowedUrl(url: string, selfOrigin: string, allowedOrigins: re
     return false
   }
 }
+
+/**
+ * One user-facing confidence becomes three MediaPipe thresholds. They were all equal (0.6, stricter than MediaPipe's own
+ * 0.5 defaults), which makes a hand that is blurred by a quick movement fail the TRACKING check, so it is dropped and has
+ * to be found again from scratch. Detection (finding a hand from nothing) stays fairly strict to avoid phantom hands;
+ * presence and tracking are deliberately more forgiving so a fast hand is followed instead of lost.
+ */
+export function confidenceTriplet(c: number): { detection: number; presence: number; tracking: number } {
+  const clamp = (v: number) => Math.min(0.9, Math.max(0.1, v))
+  return { detection: clamp(c * 0.85), presence: clamp(c * 0.65), tracking: clamp(c * 0.5) }
+}

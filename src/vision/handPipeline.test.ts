@@ -119,3 +119,15 @@ describe('HandPipeline — detector glitches', () => {
     expect(frames(xs).every((x) => x !== null)).toBe(true)
   })
 })
+
+describe('HandPipeline — quick movement', () => {
+  it('a quick, wide stroke at 10 fps is tracked on every frame (the jump guard must not eat real motion)', () => {
+    const p = make()
+    let dropped = 0
+    for (let i = 0; i < 60; i++) {
+      const x = 0.65 + 0.2 * Math.sin((2 * Math.PI * 2.5 * i * 100) / 1000)
+      if (!p.process(result(rawHand('Right', x)), i * 100).right) dropped++
+    }
+    expect(dropped).toBe(0)
+  })
+})

@@ -39,6 +39,12 @@ export interface BeatConfig {
   minChainForTempo: number
   /** If the right hand is gone for longer than max(this, 2.5 beats), the pattern restarts at the next downbeat (ms). */
   patternResetGapMs: number
+  /**
+   * If only ONE hand is visible, that hand conducts, whichever side it was assigned to. Left/right assignment can be wrong
+   * (detector labels, camera framing, a hand held across the body); a conductor with one hand up wants tempo, not silence.
+   * With two hands visible the right hand always beats and the left shapes dynamics.
+   */
+  loneHandConducts: boolean
 }
 
 export interface TempoConfig {
@@ -153,6 +159,7 @@ export const DEFAULT_GESTURE_CONFIG: GestureConfig = {
     maxIntervalRatio: 1.3,
     minChainForTempo: 4,
     patternResetGapMs: 1500,
+    loneHandConducts: true,
   },
   tempo: { minBpm: 40, maxBpm: 200, medianWindow: 5, smoothing: 0.5, maxBpmStepPerBeat: 14, outlierFraction: 0.35 },
   dynamics: {
@@ -180,8 +187,8 @@ export const DEFAULT_GESTURE_CONFIG: GestureConfig = {
   },
   tracking: {
     // One-Euro parameters for coordinates normalised to the image (speeds are image-widths per second).
-    filterMinCutoff: 1.0,
-    filterBeta: 4,
+    filterMinCutoff: 1.6,
+    filterBeta: 6,
     lossGraceMs: 300,
     minDetectionConfidence: 0.6,
     minTrackingConfidence: 0.5,

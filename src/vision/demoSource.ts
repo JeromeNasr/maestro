@@ -58,6 +58,8 @@ export interface DemoOptions {
   /** Detector score reported for the hands (0–1). */
   score: number
   /** 'mediapipe-raw' (default): labels inverted like MediaPipe does for an un-mirrored frame. 'as-user': labels equal the user's side. */
+  /** Wrist → middle-base distance in image heights (default 0.16; a real hand at arm's length is nearer 0.09–0.12). */
+  handSize?: number
   labelModel?: 'mediapipe-raw' | 'as-user'
   /** Probability per frame that a hand's reported label flips (real detectors flicker). Deterministic with `seed`. */
   labelFlicker?: number
@@ -145,7 +147,7 @@ export class DemoSource {
     for (const side of ['left', 'right'] as const) {
       if (!this.isVisible(side, t)) continue
       const p = this.opts.paths?.[side] ? this.palmAt(side, t) : side === 'right' ? this.rightPalmAtPhase(this.phase) : this.palmAt('left', t)
-      const display = makeHandLandmarks(p.x, p.y, 0.16, side, this.opts.aspect)
+      const display = makeHandLandmarks(p.x, p.y, this.opts.handSize ?? 0.16, side, this.opts.aspect)
       if (display.length !== LANDMARK_COUNT) continue
       const n = this.opts.noise
       hands.push({

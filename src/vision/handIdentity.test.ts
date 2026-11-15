@@ -191,3 +191,30 @@ describe('Right-hand conducting through the real pipeline with realistic detecto
     expect(DEFAULT_GESTURE_CONFIG.tracking.lossGraceMs).toBeGreaterThan(0)
   })
 })
+
+describe('HandIdentityTracker — quick movement keeps the hand', () => {
+  it('a fast flick of one hand (3–4 image-widths/s at 10 fps, small hand) stays the same hand', () => {
+    const t = new HandIdentityTracker()
+    let lost = 0
+    for (let i = 0; i < 60; i++) {
+      const x = 0.7 + 0.25 * Math.sin((2 * Math.PI * 2 * i * 100) / 1000) // 2 Hz, ±0.25 wide, sampled every 100 ms
+      const c = { ...usersRight(x), size: 0.09 }
+      const a = t.assign([c], VERIFIED_SWAP, i * 100)
+      if (!a.right || a.left) lost++
+    }
+    expect(lost).toBe(0)
+  })
+  it('does not hand the beat to the other side when one hand moves far and quickly while the other is out of view', () => {
+    const t = new HandIdentityTracker()
+    t.assign([{ ...usersRight(0.8), size: 0.09 }], VERIFIED_SWAP, 0)
+    const a = t.assign([{ ...usersRight(0.5), size: 0.09 }], VERIFIED_SWAP, 100) // 0.3 in 100 ms
+    expect(a.right).not.toBeNull()
+  })
+  it('still treats a clearly different hand (other side, contradicting label, far away) as a new hand', () => {
+    const t = new HandIdentityTracker()
+    t.assign([usersRight(0.75)], VERIFIED_SWAP, 0)
+    const a = t.assign([usersLeft(0.2)], VERIFIED_SWAP, 33)
+    expect(a.left).not.toBeNull()
+    expect(a.right).toBeNull()
+  })
+})
