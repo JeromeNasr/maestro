@@ -40,7 +40,7 @@ describe('Orchestra page: listening and famous players', () => {
   it('offers hear-it for all instruments and a whole-range button for the pitched ones', () => {
     render(<MemoryRouter><Orchestra /></MemoryRouter>)
     const all = FAMILIES.flatMap((f) => f.instruments)
-    expect(screen.getAllByRole('button', { name: /^hear the / })).toHaveLength(all.length)
+    expect(screen.getAllByRole('button', { name: /^hear the /i })).toHaveLength(all.length)
     expect(screen.getAllByRole('button', { name: /whole range/i })).toHaveLength(all.filter((i) => i.range).length)
     expect(screen.getByText('Paganini', { exact: false })).toBeInTheDocument()
   })
